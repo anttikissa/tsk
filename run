@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run Tsk from this checkout. Works from any directory and through symlinks.
+set -e
+src=$0
+while [ -L "$src" ]; do
+	dir=$(cd -P "$(dirname "$src")" && pwd)
+	src=$(readlink "$src")
+	case $src in /*) ;; *) src=$dir/$src ;; esac
+done
+here=$(cd -P "$(dirname "$src")" && pwd)
+command -v bun >/dev/null 2>&1 || { echo 'tsk: Bun is required (https://bun.sh)' >&2; exit 127; }
+exec bun "$here/src/cli.ts" "$@"
