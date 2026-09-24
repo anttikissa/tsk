@@ -1,0 +1,6 @@
+{
+	title: 'Run and install Tsk',
+	description: 'Provide ./run for invoking this checkout with Bun from any working directory, including through a symlink, forwarding arguments and exit status. Provide an idempotent ./install for clone-based use: install project dependencies, link ~/.local/bin/tsk to ./run without overwriting an unrelated file, and help the user put ~/.local/bin on PATH for future shells. Keep the package bin entry runnable when installed by a package manager (including globally); packaging and publishing @anttikissa/tsk and supporting Node without Bun are separate work. Test the launcher via a symlink and the installer without modifying the real home directory.',
+	status: 'planned',
+	needs: ['e']
+}
