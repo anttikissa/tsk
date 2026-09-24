@@ -8,4 +8,6 @@ A task has a title, description, `status: 'planned' | 'done'`, and `needs`, a li
 
 Descriptions are instructions for a fresh build, not diaries of how this build happened. Correct or remove notes that become wrong, useless, or misleading. Delete tasks for behavior no longer wanted rather than leaving them planned. Until Tsk can manage its own graph, edit these files manually.
 
+Every user-facing CLI command must appear in the help output. Add or remove its help entry in the same commit as the command; the initial `tsk help` behavior is specified by task `77`.
+
 The whole project, including these task files, is MIT licensed; see [`LICENSE`](../LICENSE).

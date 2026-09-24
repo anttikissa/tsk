@@ -1,0 +1,6 @@
+{
+	title: 'Show a task',
+	description: 'tsk show <id> prints the task as ASON, including its ID and direct needs with each dependency title and status. Derive reverse references to this task when useful, but do not dump the entire graph by default. Read the nearest Tsk project, and report an unknown ID clearly without producing a success record. Test output for a task with dependencies and one with none.',
+	status: 'planned',
+	needs: ['r']
+}
