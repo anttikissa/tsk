@@ -1,6 +1,6 @@
 {
 	title: 'Show a task',
 	description: 'tsk show <id> prints ASON with the task ID, title, description, status, needs as { id, title, status } summaries of its direct dependencies, and neededBy as IDs of tasks that directly need it. Derive neededBy from the graph; include empty lists rather than omitting either field. Read the nearest Tsk project and report an unknown ID clearly without printing a success record. Test tasks with and without incoming and outgoing links.',
-	status: 'planned',
+	status: 'done',
 	needs: ['r']
 }

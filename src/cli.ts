@@ -6,6 +6,7 @@ import { doneTask } from './done.ts'
 import { stringify } from './ason.ts'
 import { initProject } from './init.ts'
 import { loadProject, type Task } from './project.ts'
+import { showTask } from './show.ts'
 
 const usage = `Usage: tsk <command>
 
@@ -13,9 +14,10 @@ Commands:
   init    Create tasks/ at the nearest Git root
   add     Add a task: --title <text> --description <text>
           [--status planned|done] [--needs <id>]...
+  done    Mark a task done: <id>
+  show    Show one task and its direct links: <id>
   ls      List all tasks (ID, title, status, needs)
-  ready   List planned tasks whose dependencies are done
-  done    Mark a task done: <id>`
+  ready   List planned tasks whose dependencies are done`
 
 async function add(args: string[]): Promise<void> {
 	const { values, positionals } = parseArgs({
@@ -63,6 +65,11 @@ export async function main(args: string[]): Promise<number> {
 		}
 		if (command === 'add') {
 			await add(rest)
+			return 0
+		}
+		if (command === 'show') {
+			if (rest.length !== 1) throw new Error(`show requires exactly one task ID, got '${rest.join(' ')}'`)
+			console.log(await showTask(rest[0]!))
 			return 0
 		}
 		if (command === 'ls') {
