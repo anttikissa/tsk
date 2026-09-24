@@ -4,14 +4,15 @@ import { parseArgs } from 'node:util'
 import { addTask } from './add.ts'
 import { stringify } from './ason.ts'
 import { initProject } from './init.ts'
-import type { Task } from './project.ts'
+import { loadProject, type Task } from './project.ts'
 
 const usage = `Usage: tsk <command>
 
 Commands:
   init    Create tasks/ at the nearest Git root
   add     Add a task: --title <text> --description <text>
-          [--status planned|done] [--needs <id>]...`
+          [--status planned|done] [--needs <id>]...
+  ls      List all tasks (ID, title, status, needs)`
 
 async function add(args: string[]): Promise<void> {
 	const { values, positionals } = parseArgs({
@@ -50,6 +51,15 @@ export async function main(args: string[]): Promise<number> {
 		}
 		if (command === 'add') {
 			await add(rest)
+			return 0
+		}
+		if (command === 'ls') {
+			if (rest.length) throw new Error(`ls takes no arguments, got '${rest.join(' ')}'`)
+			const { tasks } = await loadProject()
+			const rows = [...tasks.values()]
+				.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+				.map(({ id, title, status, needs }) => ({ id, title, status, needs }))
+			console.log(rows.length ? `[\n\t${rows.map((row) => stringify(row, 'short')).join(',\n\t')}\n]` : '[]')
 			return 0
 		}
 	} catch (error) {
