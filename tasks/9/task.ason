@@ -1,0 +1,6 @@
+{
+	title: 'ASON read and write support',
+	description: 'Bring in the self-contained ASON parser and serializer from Hal (src/utils/ason.ts), with its MIT attribution and focused tests. Tsk must read task.ason and project.ason and print valid ASON without depending on a local Hal checkout.',
+	status: 'planned',
+	needs: ['e'],
+}
