@@ -1,6 +1,6 @@
 {
 	title: 'ASON read and write support',
-	description: 'Read and write ASON, using the attached ason.ts as the reference implementation. Test parsing project.ason and task.ason, round-tripping values, comments and trailing commas, and reporting malformed input.',
-	status: 'planned',
+	description: 'Read and write ASON, using the attached ason.ts as the reference implementation. Beyond it, keep a __proto__ key as an ordinary property, reject unterminated block comments, preserve -0, and end every entry of expanded output with a comma so rewritten task files match hand-written ones. Test parsing project.ason and task.ason, round-tripping values, comments and trailing commas, and reporting malformed input.',
+	status: 'done',
 	needs: ['e'],
 }
