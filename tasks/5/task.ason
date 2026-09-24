@@ -1,0 +1,6 @@
+{
+	title: 'Add a task',
+	description: 'tsk add --title <text> --description <text> creates a new task directory at the nearest Tsk project root. Its status defaults to planned and its needs to []; allow --status done for describing already implemented work and repeatable --needs <id> for explicit dependencies. Choose a short random lowercase Crockford base32 ID, retry collisions without overwriting anything, and increase ID length when short IDs become crowded. Reject missing fields and unknown dependency IDs; write valid ASON and print the created task with its ID as ASON on stdout. Test creation from a nested directory and collision handling.',
+	status: 'planned',
+	needs: ['r']
+}
