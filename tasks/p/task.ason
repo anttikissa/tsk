@@ -1,6 +1,6 @@
 {
 	title: 'Ready tasks',
 	description: 'tsk ready prints an ASON list of planned tasks whose needs are all done, including tasks with no needs. Include each task ID, title, description, status, and needs so an agent can choose work; omit blocked and done tasks. Read the nearest Tsk project and print valid ASON even when the list is empty. Test readiness as prerequisite statuses change.',
-	status: 'planned',
+	status: 'done',
 	needs: ['r']
 }

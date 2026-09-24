@@ -12,7 +12,8 @@ Commands:
   init    Create tasks/ at the nearest Git root
   add     Add a task: --title <text> --description <text>
           [--status planned|done] [--needs <id>]...
-  ls      List all tasks (ID, title, status, needs)`
+  ls      List all tasks (ID, title, status, needs)
+  ready   List planned tasks whose dependencies are done`
 
 async function add(args: string[]): Promise<void> {
 	const { values, positionals } = parseArgs({
@@ -60,6 +61,15 @@ export async function main(args: string[]): Promise<number> {
 				.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
 				.map(({ id, title, status, needs }) => ({ id, title, status, needs }))
 			console.log(rows.length ? `[\n\t${rows.map((row) => stringify(row, 'short')).join(',\n\t')}\n]` : '[]')
+			return 0
+		}
+		if (command === 'ready') {
+			if (rest.length) throw new Error(`ready takes no arguments, got '${rest.join(' ')}'`)
+			const { tasks } = await loadProject()
+			const ready = [...tasks.values()]
+				.filter((task) => task.status === 'planned' && task.needs.every((id) => tasks.get(id)!.status === 'done'))
+				.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+			console.log(stringify(ready))
 			return 0
 		}
 	} catch (error) {
