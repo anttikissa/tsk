@@ -1,6 +1,6 @@
 {
 	title: 'Mark a task done',
-	description: 'tsk done <id> changes a planned task to done in its task.ason and prints the updated task as ASON. Do not discard other fields, comments, or attachments; do not create a Git commit automatically. Refuse an unknown ID or a task with planned needs, and succeed without rewriting an already done task. Test these cases and complete this task by using tsk done itself, committing its status change alongside the implementation.',
+	description: 'tsk done <id> changes a planned task to done in its task.ason and prints the updated task as ASON. Preserve other task fields and attachments; source formatting is not significant. Do not create a Git commit automatically. Refuse an unknown ID or a task with planned needs, and succeed without rewriting an already done task. Test these cases and complete this task by using tsk done itself, committing its status change alongside the implementation.',
 	status: 'done',
 	needs: [
 		'r'
