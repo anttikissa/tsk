@@ -6,11 +6,14 @@ Each task says what to build, which earlier tasks it needs, and whether it is `p
 
 ## Install
 
-Tsk needs [Bun](https://bun.sh). From a clone:
+Tsk runs on [Bun](https://bun.sh). Install globally with either npm or Bun:
 
 ```sh
-./install   # installs dependencies, links ~/.local/bin/tsk, puts it on PATH
-tsk --help
+npm install -g @anttikissa/tsk
+# or
+bun install -g @anttikissa/tsk
 ```
 
-Or run the checkout directly with `./run <command>`.
+Bun must be installed and available on your `PATH` for either install method, because it runs the `tsk` command.
+
+For development from a clone, install dependencies with `bun install`, then run `./run <command>` or `bun src/cli.ts <command>`.

@@ -1,9 +1,22 @@
 {
-  "name": "tsk",
+  "name": "@anttikissa/tsk",
+  "version": "0.1.0",
+  "description": "A minimal, Git-backed task manager for agents rebuilding software from small, reusable tasks.",
   "type": "module",
-  "private": true,
   "license": "MIT",
+  "keywords": ["tasks", "task-manager", "agents", "git", "bun"],
   "bin": { "tsk": "src/cli.ts" },
+  "files": [
+    "src/cli.ts",
+    "src/add.ts",
+    "src/done.ts",
+    "src/ason.ts",
+    "src/init.ts",
+    "src/project.ts",
+    "src/show.ts",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "tsk": "bun src/cli.ts",
     "test": "bun test",
