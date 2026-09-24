@@ -28,8 +28,10 @@ smoke() {
     grep -q 'Packed smoke task' "$tmp/$manager-ls.out"
     "$bindir/tsk" ready > "$tmp/$manager-ready.out"
     grep -q 'Packed smoke task' "$tmp/$manager-ready.out"
-    id=$(find tasks -mindepth 2 -maxdepth 2 -name task.ason -print | sed 's#tasks/\([^/]*\)/task\.ason#\1#')
-    [ -n "$id" ] || { echo "smoke ($manager): added task file not found" >&2; exit 1; }
+    set -- tasks/*/task.ason
+    [ -f "$1" ] || { echo "smoke ($manager): added task file not found" >&2; exit 1; }
+    id=${1#tasks/}
+    id=${id%/task.ason}
     "$bindir/tsk" show "$id" > "$tmp/$manager-show.out"
     grep -q 'Packed smoke task' "$tmp/$manager-show.out"
     "$bindir/tsk" done "$id"
