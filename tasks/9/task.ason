@@ -1,6 +1,6 @@
 {
 	title: 'ASON read and write support',
-	description: 'Bring in the self-contained ASON parser and serializer from Hal (src/utils/ason.ts), with its MIT attribution and focused tests. Tsk must read task.ason and project.ason and print valid ASON without depending on a local Hal checkout.',
+	description: 'Read and write ASON using the attached ason.ts as the reference implementation. In TypeScript, it can be copied into the project; in another stack, reproduce the behavior needed by these task files. Include the accompanying MIT license notice if incorporating the source. Test parsing project.ason and task.ason, round-tripping strings and arrays, comments and trailing commas, and reporting malformed input. The tool must work from this repository alone, with no external source checkout.',
 	status: 'planned',
 	needs: ['e'],
 }
