@@ -1,6 +1,6 @@
 {
 	title: 'Project discovery and task loading',
 	description: 'From a working directory, find the nearest Git root and load its tasks/ only if project.ason identifies the Tsk format. Read task directories and their ASON records, deriving IDs from directory names. Reject invalid status, malformed records, missing dependencies, and cycles with useful errors; never silently adopt an unrelated tasks/ directory.',
-	status: 'planned',
+	status: 'done',
 	needs: ['9']
 }
