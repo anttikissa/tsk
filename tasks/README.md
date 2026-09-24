@@ -7,3 +7,5 @@ This directory is both Tsk's own build plan and an example of its format. `proje
 A task has a title, description, `status: 'planned' | 'done'`, and `needs`, a list of task IDs. `b` with `needs: ['a']` requires `a` to be done first. Reverse links are derived, not stored. A planned task is ready when all its needs are done. A done task is satisfied by code or other versioned project files in this repository; mark it done in the same readable commit that implements it. For a fresh rebuild, copy the task graph and reset statuses to planned.
 
 Descriptions are instructions for a fresh build, not diaries of how this build happened. Correct or remove notes that become wrong, useless, or misleading. Delete tasks for behavior no longer wanted rather than leaving them planned. Until Tsk can manage its own graph, edit these files manually.
+
+The whole project, including these task files, is MIT licensed; see [`LICENSE`](../LICENSE).

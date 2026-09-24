@@ -1,6 +1,6 @@
 {
 	title: 'ASON read and write support',
-	description: 'Read and write ASON using the attached ason.ts as the reference implementation. In TypeScript, it can be copied into the project; in another stack, reproduce the behavior needed by these task files. Include the accompanying MIT license notice if incorporating the source. Test parsing project.ason and task.ason, round-tripping strings and arrays, comments and trailing commas, and reporting malformed input. The tool must work from this repository alone, with no external source checkout.',
+	description: 'Read and write ASON, using the attached ason.ts as the reference implementation. Test parsing project.ason and task.ason, round-tripping values, comments and trailing commas, and reporting malformed input.',
 	status: 'planned',
 	needs: ['e'],
 }
