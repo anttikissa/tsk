@@ -1,0 +1,16 @@
+{
+  "name": "tsk",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "bin": { "tsk": "src/cli.ts" },
+  "scripts": {
+    "tsk": "bun src/cli.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^7.0.2"
+  }
+}
