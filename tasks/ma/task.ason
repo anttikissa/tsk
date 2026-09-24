@@ -1,6 +1,6 @@
 {
 	title: 'Packed package installation smoke test',
 	description: 'From a locally packed @anttikissa/tsk tarball, install into disposable locations without touching the real global prefix or home. Verify the installed tsk bin can run with Bun and exercise init, add, ls, ready, show, done, and help against a disposable Git repository, including reading task files from outside the package checkout. Exercise npm and Bun package-manager installation paths or document a concrete incompatibility discovered. Keep the test repeatable and free of registry credentials; do not publish. Run project tests and typecheck.',
-	status: 'planned',
+	status: 'done',
 	needs: ['tc', '5p', 'ks', '77']
 }
