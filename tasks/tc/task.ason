@@ -1,0 +1,6 @@
+{
+	title: 'Public npm package metadata',
+	description: 'Prepare a Bun-first public package named @anttikissa/tsk at version 0.1.0. Remove private: true, keep a working tsk bin entry with a Bun shebang, and package only the CLI runtime files plus README and MIT license (not tests, task blueprints, or dev tooling). Document npm install -g @anttikissa/tsk and bun install -g @anttikissa/tsk, noting Bun must be on PATH for either. Confirm npm pack --dry-run includes everything required to run the CLI and excludes unrelated project files. Do not publish in this task.',
+	status: 'planned',
+	needs: ['e', 'v']
+}
