@@ -17,7 +17,8 @@ Commands:
   done    Mark a task done: <id>
   show    Show one task and its direct links: <id>
   ls      List all tasks (ID, title, status, needs)
-  ready   List planned tasks whose dependencies are done`
+  ready   List planned tasks whose dependencies are done
+  help    Show this usage guide`
 
 async function add(args: string[]): Promise<void> {
 	const { values, positionals } = parseArgs({
@@ -54,6 +55,11 @@ export async function main(args: string[]): Promise<number> {
 		return 0
 	}
 	try {
+		if (command === 'help') {
+			if (rest.length) throw new Error(`help takes no arguments, got '${rest.join(' ')}'`)
+			console.log(usage)
+			return 0
+		}
 		if (command === 'init') {
 			if (rest.length) throw new Error(`init takes no arguments, got '${rest.join(' ')}'`)
 			console.log(`Created ${await initProject()}`)
