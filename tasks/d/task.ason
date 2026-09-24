@@ -2,5 +2,5 @@
 	title: 'Versioned task blueprint',
 	description: 'A Git repository contains a tasks/ directory with a Tsk format marker, a freeform README for shared build context, and flat ID directories with ASON task records. The initial records describe Tsk itself; they can be read without a working CLI.',
 	status: 'done',
-	needs: [],
+	needs: []
 }

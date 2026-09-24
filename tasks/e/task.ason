@@ -2,5 +2,5 @@
 	title: 'Bun and TypeScript project setup',
 	description: 'Set up package.json, TypeScript configuration, a Bun-executable CLI entry point, and scripts for tests and typechecking. Running the entry point and the project checks should work in a fresh clone after installing dependencies. Keep the CLI small; its features arrive in later tasks.',
 	status: 'done',
-	needs: ['d'],
+	needs: ['d']
 }

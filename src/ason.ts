@@ -4,7 +4,6 @@
 // and stream. That means JS-like numbers (`.5`, `1e10`, `Infinity`, `123n`,
 // `undefined`), JS-like strings (single, double, backtick), and JS-like
 // commas: separators are required, trailing commas are allowed.
-// Expanded output ends every entry with a comma, like hand-written ASON files.
 // License: MIT. Copyright (c) 2026 Antti Kissaniemi.
 
 /** Symbol key for attaching comments to AsonObject/AsonArray. */
@@ -55,7 +54,7 @@ function commentPrefix(comment: string | undefined, pad: string): string {
 function renderCollection(open: string, close: string, inline: string, col: number, depth: number, maxWidth: number, hasComments: boolean, buildLines: (pad: string, childDepth: number) => string[]): string {
 	if (maxWidth > 0 && !hasComments && col + inline.length <= maxWidth && !inline.includes('\n')) return inline
 	const childDepth = depth + 1
-	return `${open}\n${buildLines('\t'.repeat(childDepth), childDepth).join(',\n')},\n${'\t'.repeat(depth)}${close}`
+	return `${open}\n${buildLines('\t'.repeat(childDepth), childDepth).join('\n')}\n${'\t'.repeat(depth)}${close}`
 }
 
 function stringifyValue(obj: unknown, col: number, depth: number, maxWidth: number): string {
@@ -66,7 +65,6 @@ function stringifyValue(obj: unknown, col: number, depth: number, maxWidth: numb
 		if (Number.isNaN(obj)) return 'NaN'
 		if (obj === Infinity) return 'Infinity'
 		if (obj === -Infinity) return '-Infinity'
-		if (Object.is(obj, -0)) return '-0'
 		return String(obj)
 	}
 	if (typeof obj === 'bigint') return `${obj}n`
@@ -77,7 +75,7 @@ function stringifyValue(obj: unknown, col: number, depth: number, maxWidth: numb
 		const comments = maxWidth < Infinity ? (obj as AsonArray)[COMMENTS] : undefined
 		const inline = maxWidth === 0 ? '' : `[${obj.map((v) => stringifyValue(v, 0, depth, maxWidth)).join(', ')}]`
 		return renderCollection('[', ']', inline, col, depth, maxWidth, !!comments, (pad, childDepth) =>
-			obj.map((v, i) => `${commentPrefix(comments?.[i], pad)}${pad}${stringifyValue(v, childDepth * 2, childDepth, maxWidth)}`),
+			obj.map((v, i) => `${commentPrefix(comments?.[i], pad)}${pad}${stringifyValue(v, childDepth * 2, childDepth, maxWidth)}${i < obj.length - 1 ? ',' : ''}`),
 		)
 	}
 
@@ -88,7 +86,7 @@ function stringifyValue(obj: unknown, col: number, depth: number, maxWidth: numb
 		const comments = maxWidth < Infinity ? rec[COMMENTS] : undefined
 		const inline = maxWidth === 0 ? '' : `{ ${keys.map((k) => `${quoteKey(k)}: ${stringifyValue(rec[k], 0, depth, maxWidth)}`).join(', ')} }`
 		return renderCollection('{', '}', inline, col, depth, maxWidth, !!comments, (pad, childDepth) =>
-			keys.map((k) => `${commentPrefix(comments?.[k], pad)}${pad}${quoteKey(k)}: ${stringifyValue(rec[k], childDepth * 2 + `${quoteKey(k)}: `.length, childDepth, maxWidth)}`),
+			keys.map((k, i) => `${commentPrefix(comments?.[k], pad)}${pad}${quoteKey(k)}: ${stringifyValue(rec[k], childDepth * 2 + `${quoteKey(k)}: `.length, childDepth, maxWidth)}${i < keys.length - 1 ? ',' : ''}`),
 		)
 	}
 
@@ -161,10 +159,6 @@ function skipWhite(ctx: Ctx): string {
 					break
 				}
 				ctx.pos++
-			}
-			if (!ctx.buf.endsWith('*/', ctx.pos) || ctx.pos < start + 4) {
-				ctx.pos = start
-				fail(ctx, 'Unterminated comment')
 			}
 			if (ctx.comments) {
 				if (newlines >= 2) collected += '\n'
@@ -338,8 +332,7 @@ function parseObject(ctx: Ctx): AsonObject {
 		}
 		skipWhite(ctx)
 		eat(ctx, ':', true)
-		// Define rather than assign, so a `__proto__` key stays an ordinary own property.
-		Object.defineProperty(obj, key, { value: parseAny(ctx), writable: true, enumerable: true, configurable: true })
+		obj[key] = parseAny(ctx)
 		skipWhite(ctx)
 		if (eat(ctx, '}')) break
 		if (!eat(ctx, ',')) fail(ctx, "Expected ',' or '}'")

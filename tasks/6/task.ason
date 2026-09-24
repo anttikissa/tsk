@@ -2,5 +2,5 @@
 	title: 'Initialize a task directory',
 	description: 'tsk init creates tasks/, its Tsk format marker, and a short tasks/README.md template at the nearest Git root. Do not overwrite an existing tasks/ directory, whether or not it belongs to Tsk. Work without interactive prompts for agents; report ambiguities or errors clearly.',
 	status: 'planned',
-	needs: ['9'],
+	needs: ['9']
 }
