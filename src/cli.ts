@@ -2,6 +2,7 @@
 // Tsk command-line entry point.
 import { parseArgs } from 'node:util'
 import { addTask } from './add.ts'
+import { doneTask } from './done.ts'
 import { stringify } from './ason.ts'
 import { initProject } from './init.ts'
 import { loadProject, type Task } from './project.ts'
@@ -13,7 +14,8 @@ Commands:
   add     Add a task: --title <text> --description <text>
           [--status planned|done] [--needs <id>]...
   ls      List all tasks (ID, title, status, needs)
-  ready   List planned tasks whose dependencies are done`
+  ready   List planned tasks whose dependencies are done
+  done    Mark a task done: <id>`
 
 async function add(args: string[]): Promise<void> {
 	const { values, positionals } = parseArgs({
@@ -38,6 +40,11 @@ async function add(args: string[]): Promise<void> {
 	console.log(stringify(task))
 }
 
+async function done(args: string[]): Promise<void> {
+	if (args.length !== 1) throw new Error('done requires exactly one task ID')
+	console.log(stringify(await doneTask(args[0]!)))
+}
+
 export async function main(args: string[]): Promise<number> {
 	const [command, ...rest] = args
 	if (command === undefined || command === '--help' || command === '-h') {
@@ -48,6 +55,10 @@ export async function main(args: string[]): Promise<number> {
 		if (command === 'init') {
 			if (rest.length) throw new Error(`init takes no arguments, got '${rest.join(' ')}'`)
 			console.log(`Created ${await initProject()}`)
+			return 0
+		}
+		if (command === 'done') {
+			await done(rest)
 			return 0
 		}
 		if (command === 'add') {
