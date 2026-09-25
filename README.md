@@ -50,15 +50,13 @@ Task listings and `tsk add` print ASON. For example, `tsk add --title 'Write tes
 
 ## Installing
 
-Tsk runs on [Bun](https://bun.sh). Install globally with either npm or Bun:
+Tsk requires [Bun](https://bun.sh). Install Tsk globally with:
 
 ```sh
-npm install -g @anttikissa/tsk
-# or
 bun install -g @anttikissa/tsk
 ```
 
-Bun must be installed and available on your `PATH` for either install method, because it runs the `tsk` command.
+Keep Bun on your `PATH` to run the `tsk` command.
 
 For development from a clone, run `./install` to install dependencies and link `tsk` into `~/.local/bin`. Or run `bun install` and invoke the checkout without installing it via `./run <command>`.
 
