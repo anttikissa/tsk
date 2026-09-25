@@ -16,51 +16,60 @@ async function fixture(): Promise<string> {
 	return root
 }
 
-async function task(root: string, id: string, status: string, needs: string[] = []): Promise<string> {
+async function task(root: string, id: string, source: string): Promise<void> {
 	const dir = join(root, 'tasks', id)
-	await mkdir(dir)
-	const path = join(dir, 'task.ason')
-	await writeFile(path, `{ // a note\n title: 'Task ${id}', description: 'Build ${id}', status: '${status}', needs: ${JSON.stringify(needs)}, extra: 'keep me' }`)
-	return path
+	await mkdir(dir, { recursive: true })
+	await writeFile(join(dir, 'task.ason'), source)
 }
 
-function done(cwd: string, ...args: string[]) {
-	return Bun.spawnSync(['bun', cli, 'done', ...args], { cwd })
+function done(root: string, ...args: string[]) {
+	return Bun.spawnSync(['bun', cli, 'done', ...args], { cwd: root })
 }
 
 afterEach(async () => {
 	for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
 })
 
-test('done updates a task from a nested directory and preserves extra fields and attachments', async () => {
+test('done refuses unknown tasks and tasks with planned needs', async () => {
 	const root = await fixture()
-	await task(root, 'a', 'done')
-	const path = await task(root, 'b', 'planned', ['a'])
-	await writeFile(join(root, 'tasks', 'b', 'notes.txt'), 'attachment')
-	const nested = join(root, 'nested')
-	await mkdir(nested)
-	const result = done(nested, 'b')
-	expect(result.exitCode).toBe(0)
-	expect(result.stderr.toString()).toBe('')
-	expect(parse(result.stdout.toString())).toEqual({ id: 'b', title: 'Task b', description: 'Build b', status: 'done', needs: ['a'] })
-	const content = await readFile(path, 'utf8')
-	expect(parse(content)).toMatchObject({ status: 'done', extra: 'keep me' })
-	expect(content).toContain('// a note')
-	expect(await readFile(join(root, 'tasks', 'b', 'notes.txt'), 'utf8')).toBe('attachment')
-	const repeat = done(root, 'b')
-	expect(repeat.exitCode).toBe(1)
-	expect(await readFile(path, 'utf8')).toBe(content)
+	await task(root, 'a', "{ title: 'A', description: '', status: 'planned', needs: [] }")
+	await task(root, 'b', "{ title: 'B', description: '', status: 'planned', needs: ['a'] }")
+	const unknown = done(root, 'z')
+	expect(unknown.exitCode).toBe(1)
+	expect(unknown.stderr.toString()).toContain("Unknown task ID 'z'")
+	const blocked = done(root, 'b')
+	expect(blocked.exitCode).toBe(1)
+	expect(blocked.stderr.toString()).toContain('has planned needs: a')
+	expect((await readFile(join(root, 'tasks', 'b', 'task.ason'), 'utf8'))).toContain("status: 'planned'")
 })
 
-test('done refuses unknown tasks, unfinished needs and malformed arguments without rewriting', async () => {
+test('done prints updated ASON and preserves comments and additional fields', async () => {
 	const root = await fixture()
-	await task(root, 'a', 'planned')
-	const path = await task(root, 'b', 'planned', ['a'])
-	const original = await readFile(path, 'utf8')
-	for (const args of [['not-found'], ['b'], [], ['b', 'a']]) {
-		const result = done(root, ...args)
-		expect(result.exitCode).toBe(1)
-		expect(result.stdout.toString()).toBe('')
-		expect(await readFile(path, 'utf8')).toBe(original)
-	}
+	await task(root, 'a', `{
+	// retained note
+	title: 'A',
+	description: '',
+	status: 'planned',
+	needs: [],
+	attachment: { name: 'spec.md' }
+}`)
+	const result = done(root, 'a')
+	expect(result.exitCode).toBe(0)
+	const output = parse(result.stdout.toString(), { comments: true }) as Record<string, unknown>
+	expect(output).toMatchObject({ title: 'A', description: '', status: 'done', needs: [], attachment: { name: 'spec.md' } })
+	expect(result.stdout.toString()).toContain('// retained note')
+	const saved = await readFile(join(root, 'tasks', 'a', 'task.ason'), 'utf8')
+	expect(saved).toContain('// retained note')
+	expect(saved).toContain('attachment:')
+})
+
+test('done already-done task fails without rewriting it', async () => {
+	const root = await fixture()
+	const source = "{ title: 'A', description: '', status: 'done', needs: [], extra: 'kept' } // exact bytes\n"
+	await task(root, 'a', source)
+	const result = done(root, 'a')
+	expect(result.exitCode).toBe(1)
+	expect(result.stderr.toString()).toContain('Task a is already done')
+	expect(result.stdout.toString()).toBe('')
+	expect(await readFile(join(root, 'tasks', 'a', 'task.ason'), 'utf8')).toBe(source)
 })

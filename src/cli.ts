@@ -44,8 +44,8 @@ async function add(args: string[]): Promise<void> {
 }
 
 async function done(args: string[]): Promise<void> {
-	if (args.length !== 1) throw new Error('done requires exactly one task ID')
-	console.log(stringify(await doneTask(args[0]!)))
+	if (args.length !== 1) throw new Error(`done requires exactly one task ID, got '${args.join(' ')}'`)
+	console.log(await doneTask(args[0]!))
 }
 
 export async function main(args: string[]): Promise<number> {
