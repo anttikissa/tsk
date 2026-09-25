@@ -9,7 +9,7 @@
   "bin": { "tsk": "run" },
   "files": [
     "run",
-    "dist/",
+    "dist/*.js",
     "src/cli.ts",
     "src/add.ts",
     "src/done.ts",
