@@ -4,6 +4,7 @@
   "description": "A minimal, Git-backed task manager for agents rebuilding software from small, reusable tasks.",
   "type": "module",
   "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/anttikissa/tsk.git" },
   "keywords": ["tasks", "task-manager", "agents", "git", "bun"],
   "bin": { "tsk": "src/cli.ts" },
   "files": [
@@ -15,6 +16,7 @@
     "src/project.ts",
     "src/show.ts",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
