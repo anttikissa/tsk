@@ -1,0 +1,6 @@
+{
+	title: 'Publish initial npm release (0.1.0)',
+	description: 'Prepare and publish Tsk 0.1.0 to npm after the initial changelog. Make package.json publishable (version, public name or scope, repository metadata, correct bin and files), document the Bun runtime requirement, run tests/typecheck and npm pack --dry-run to inspect shipped files, and verify the installed tarball runs. Publish the first version with npm login and 2FA; do not commit credentials or tokens. Record the release with a Git tag and confirm the npm package is installable. Configure a GitHub Actions trusted publisher (OIDC, no stored npm publish token) for future releases; document any one-time npm-side configuration that cannot live in Git. Mark done only after the package is actually published and the release is recorded.',
+	status: 'planned',
+	needs: ['rv']
+}
