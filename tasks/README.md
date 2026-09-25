@@ -9,3 +9,5 @@ A task has a title, description, `status: 'planned' | 'done'`, and `needs`, a li
 Descriptions are instructions for a fresh build, not diaries of how this build happened. Correct or remove notes that become wrong, useless, or misleading. Delete tasks for behavior no longer wanted rather than leaving them planned. Use `tsk add` to create tasks and `tsk done` to complete them; edit other task fields manually until Tsk supports updating them.
 
 Every user-facing CLI command must appear in the help output. Add or remove its help entry in the same commit as the command; the initial `tsk help` behavior is specified by task `77`.
+
+Tsk has one CLI implementation and one public launcher: `./run`. The package's `tsk` bin and the link installed by `./install` both point to that launcher. Keep checkout and installed behavior aligned.

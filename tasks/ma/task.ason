@@ -1,6 +1,6 @@
 {
 	title: 'Packed package installation smoke test',
-	description: 'Test a locally packed @anttikissa/tsk installed with npm and Bun outside the checkout. Run the installed CLI against a disposable Git repository without touching the real home or global prefix or requiring registry credentials.',
+	description: 'Test a locally packed @anttikissa/tsk installed with npm and Bun outside the checkout. Run the installed tsk launcher against a disposable Git repository without touching the real home or global prefix or requiring registry credentials.',
 	status: 'done',
 	needs: ['tc', '5p', 'ks', '77']
 }
