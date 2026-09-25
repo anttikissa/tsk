@@ -51,7 +51,7 @@ Task listings and `tsk add` print ASON. For example, `tsk add --title 'Write tes
 
 ## Installing
 
-With Bun or Node.js (>= 22.18):
+With Bun or Node.js:
 
 ```sh
 bun install -g @anttikissa/tsk
@@ -59,7 +59,10 @@ bun install -g @anttikissa/tsk
 npm install -g @anttikissa/tsk
 ```
 
-For development from a clone, run `./install` to install dependencies with an available package manager and link `tsk` into `~/.local/bin`. Or invoke the checkout directly via `./run <command>`.
+For development from a clone (Bun or Node.js ≥22.18):
+
+- `./install` installs dependencies and links `tsk` into `~/.local/bin`
+- or invoke the checkout directly via `./run <command>`
 
 ## Release history
 
