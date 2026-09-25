@@ -7,7 +7,11 @@ import { init } from './init.ts'
 import { parse, stringify, type AsonObject } from './ason.ts'
 import { formatAson, getTask, loadProject, orderRecord, TskError, unfinishedPrerequisites, type Task } from './project.ts'
 
-const USAGE = `Usage: tsk <command>
+const VERSION: string = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
+
+const USAGE = `tsk ${VERSION}
+
+Usage: tsk <command>
 
 Commands:
   init    Create tasks/ at the nearest Git root
@@ -17,6 +21,7 @@ Commands:
   ready   List planned tasks whose dependencies are done
   show    Show one task and its direct links: <id>
   done    Mark a task done: <id>
+  version Print the installed Tsk version
   help    Show this usage guide`
 
 type Command = (args: string[], cwd: string) => void | Promise<void>
@@ -41,6 +46,11 @@ function oneId(name: string, args: string[]): string {
 const commands: Record<string, Command> = {
 	help() {
 		console.log(USAGE)
+	},
+
+	version(args) {
+		noArgs('version', args)
+		console.log(`tsk ${VERSION}`)
 	},
 
 	add(args, cwd) {
@@ -102,7 +112,8 @@ const commands: Record<string, Command> = {
 
 export async function main(args: string[], cwd = process.cwd()): Promise<number> {
 	const [given, ...rest] = args
-	const name = given === undefined || given === '--help' || given === '-h' ? 'help' : given
+	const aliases: Record<string, string> = { '--help': 'help', '-h': 'help', '--version': 'version' }
+	const name = given === undefined ? 'help' : (aliases[given] ?? given)
 	const command = Object.hasOwn(commands, name) ? commands[name] : undefined
 	try {
 		if (!command) throw new TskError(`unknown command: ${name}; run tsk help for usage`)

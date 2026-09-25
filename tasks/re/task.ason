@@ -1,6 +1,6 @@
 {
 	title: 'Report Tsk version',
 	description: 'tsk --version and tsk version print the installed package version; tsk help includes it. Read the version from package metadata so output stays in sync with releases.',
-	status: 'planned',
+	status: 'done',
 	needs: []
 }
