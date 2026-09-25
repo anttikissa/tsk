@@ -51,15 +51,15 @@ Task listings and `tsk add` print ASON. For example, `tsk add --title 'Write tes
 
 ## Installing
 
-Tsk requires Node.js 22.18 or newer, or [Bun](https://bun.sh). Install Tsk globally with either package manager:
+With Bun or Node.js (>= 22.18):
 
 ```sh
-npm install -g @anttikissa/tsk
-# or
 bun install -g @anttikissa/tsk
+# or
+npm install -g @anttikissa/tsk
 ```
 
-For development from a clone, run `./install` to install dependencies with an available package manager and link `tsk` into `~/.local/bin`. Or invoke the checkout without installing it via `./run <command>`; the launcher works with either runtime.
+For development from a clone, run `./install` to install dependencies with an available package manager and link `tsk` into `~/.local/bin`. Or invoke the checkout directly via `./run <command>`.
 
 ## Release history
 

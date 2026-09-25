@@ -1,6 +1,6 @@
 {
 	title: 'Support both Node and Bun runtimes',
-	description: 'Keep ./run as the only launcher for the checkout and installed tsk. Both npm install -g @anttikissa/tsk on a Node-only system and bun install -g @anttikissa/tsk on a Bun-only system must run tsk. Support Node.js new enough to run .ts files from the checkout; installed Node packages must also work from node_modules without Bun.',
+	description: 'Keep ./run as the only launcher for the checkout and installed tsk. Prefer Bun when both runtimes are available. Both npm install -g @anttikissa/tsk on a Node-only system and bun install -g @anttikissa/tsk on a Bun-only system must run tsk. Support Node.js new enough to run .ts files from the checkout; installed Node packages must also work from node_modules without Bun.',
 	status: 'done',
 	needs: ['tc']
 }

@@ -50,6 +50,15 @@ test('run works with Node alone, Bun alone, and neither runtime', async () => {
 	expect(missing.stderr).toContain('Node.js or Bun is required')
 })
 
+test('run prefers Bun when both runtimes are available', async () => {
+	const path = await runtimePath('none')
+	await writeFile(join(path, 'bun'), '#!/bin/sh\nprintf "bun\\n"\n', { mode: 0o755 })
+	await writeFile(join(path, 'node'), '#!/bin/sh\nprintf "node\\n"\n', { mode: 0o755 })
+	const out = sh([run, '--version'], { env: { PATH: path } })
+	expect(out.code).toBe(0)
+	expect(out.stdout).toBe('bun\n')
+})
+
 test('run works through chained relative symlinks from another directory', async () => {
 	const dir = await temp()
 	await symlink(run, join(dir, 'a'))
