@@ -1,6 +1,6 @@
 {
 	title: 'Bun and TypeScript project setup',
-	description: 'Set up a Bun and TypeScript project with one CLI implementation behind a single launcher, plus scripts for tests and typechecking. Features arrive in later tasks.',
+	description: 'Set up a Bun and TypeScript project with one CLI implementation behind a single launcher, plus scripts for tests and typechecking. Ignore generated files and local IDE settings, including .idea/. Features arrive in later tasks.',
 	status: 'done',
 	needs: ['d']
 }
