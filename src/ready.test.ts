@@ -52,6 +52,21 @@ test('ready lists only planned tasks with every need done, from a nested directo
 	])
 })
 
+test('ready waits for prerequisites behind a completed one-off task', async () => {
+	const root = await fixture()
+	await task(root, 'a', 'planned', []) // package metadata
+	await task(root, 'b', 'done', ['a']) // historical publication
+	await writeFile(join(root, 'tasks', 'b', 'task.ason'), "{ title: 'Task b', description: 'Publish', status: 'done', once: true, needs: ['a'] }")
+	await task(root, 'c', 'planned', ['b'])
+	expect(parse(ready(root).stdout.toString())).toEqual([
+		{ id: 'a', title: 'Task a', description: 'Build a', status: 'planned', needs: [] },
+	])
+	await task(root, 'a', 'done', [])
+	expect(parse(ready(root).stdout.toString())).toEqual([
+		{ id: 'c', title: 'Task c', description: 'Build c', status: 'planned', needs: ['b'] },
+	])
+})
+
 test('ready prints an empty ASON list for empty and all-done projects', async () => {
 	const root = await fixture()
 	expect(ready(root).stdout.toString()).toBe('[]\n')

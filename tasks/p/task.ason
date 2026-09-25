@@ -1,6 +1,6 @@
 {
 	title: 'Ready tasks',
-	description: 'tsk ready prints an ASON list of planned tasks whose dependencies are all done, including tasks with no dependencies. Include ID, title, description, status, and needs so an agent can choose work; print [] when none are ready.',
+	description: 'tsk ready prints an ASON list of planned tasks only when every prerequisite in their dependency chain is done, including behind completed one-off tasks. Include ID, title, description, status, and needs so an agent can choose work; print [] when none are ready.',
 	status: 'done',
 	needs: ['r']
 }

@@ -2,5 +2,9 @@
 	title: 'Initial changelog',
 	description: 'Add a dated CHANGELOG.md entry for 0.1.0 summarizing the initial task workflow and Bun requirement. Link release history from the README.',
 	status: 'done',
+	once: true,
+	notes: [
+		'Preserve CHANGELOG.md during an in-place rebuild; this task records the historical 0.1.0 entry.'
+	],
 	needs: []
 }

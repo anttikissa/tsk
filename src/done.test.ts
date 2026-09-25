@@ -39,8 +39,22 @@ test('done refuses unknown tasks and tasks with planned needs', async () => {
 	expect(unknown.stderr.toString()).toContain("Unknown task ID 'z'")
 	const blocked = done(root, 'b')
 	expect(blocked.exitCode).toBe(1)
-	expect(blocked.stderr.toString()).toContain('has planned needs: a')
+	expect(blocked.stderr.toString()).toContain('has planned prerequisites: a')
 	expect((await readFile(join(root, 'tasks', 'b', 'task.ason'), 'utf8'))).toContain("status: 'planned'")
+})
+
+test('done refuses planned prerequisites behind completed one-off tasks', async () => {
+	const root = await fixture()
+	await task(root, 'a', "{ title: 'Package', description: '', status: 'planned', needs: [] }")
+	await task(root, 'b', "{ title: 'Published 0.1.0', description: '', status: 'done', once: true, needs: ['a'] }")
+	const source = "{ title: 'New work', description: '', status: 'planned', needs: ['b'] }"
+	await task(root, 'c', source)
+	const blocked = done(root, 'c')
+	expect(blocked.exitCode).toBe(1)
+	expect(blocked.stderr.toString()).toContain('has planned prerequisites: a')
+	expect(await readFile(join(root, 'tasks', 'c', 'task.ason'), 'utf8')).toBe(source)
+	await task(root, 'a', "{ title: 'Package', description: '', status: 'done', needs: [] }")
+	expect(done(root, 'c').exitCode).toBe(0)
 })
 
 test('done prints updated ASON and preserves comments and additional fields', async () => {

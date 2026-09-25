@@ -6,7 +6,7 @@ import { addTask } from './add.ts'
 import { doneTask } from './done.ts'
 import { stringify } from './ason.ts'
 import { initProject } from './init.ts'
-import { loadProject, type Task } from './project.ts'
+import { loadProject, plannedPrerequisites, type Task } from './project.ts'
 import { showTask } from './show.ts'
 
 const usage = `Usage: tsk <command>
@@ -18,7 +18,7 @@ Commands:
   done    Mark a task done: <id>
   show    Show one task and its direct links: <id>
   ls      List all tasks (ID, title, status, needs)
-  ready   List planned tasks whose dependencies are done
+  ready   List planned tasks whose prerequisites are done
   version Print the installed Tsk version
   help    Show this usage guide`
 
@@ -99,7 +99,7 @@ export async function main(args: string[]): Promise<number> {
 			if (rest.length) throw new Error(`ready takes no arguments, got '${rest.join(' ')}'`)
 			const { tasks } = await loadProject()
 			const ready = [...tasks.values()]
-				.filter((task) => task.status === 'planned' && task.needs.every((id) => tasks.get(id)!.status === 'done'))
+				.filter((task) => task.status === 'planned' && plannedPrerequisites(task, tasks).length === 0)
 				.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
 			console.log(stringify(ready))
 			return 0

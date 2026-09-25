@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse, stringify } from './ason.ts'
-import { loadProject } from './project.ts'
+import { loadProject, plannedPrerequisites } from './project.ts'
 
 /** Complete a ready task, updating only its task record (never its attachments). */
 export async function doneTask(id: string, cwd = process.cwd()): Promise<string> {
@@ -9,8 +9,8 @@ export async function doneTask(id: string, cwd = process.cwd()): Promise<string>
 	const task = project.tasks.get(id)
 	if (!task) throw new Error(`Unknown task ID '${id}'`)
 	if (task.status === 'done') throw new Error(`Task ${id} is already done`)
-	const unfinished = task.needs.filter((need) => project.tasks.get(need)!.status !== 'done')
-	if (unfinished.length) throw new Error(`Task ${id} has planned needs: ${unfinished.join(', ')}`)
+	const unfinished = plannedPrerequisites(task, project.tasks)
+	if (unfinished.length) throw new Error(`Task ${id} has planned prerequisites: ${unfinished.join(', ')}`)
 
 	const path = join(project.tasksDir, id, 'task.ason')
 	const source = parse(await readFile(path, 'utf8'), { comments: true })

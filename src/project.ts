@@ -80,6 +80,21 @@ function taskFrom(value: unknown, id: string, path: string): Task {
 	}
 }
 
+/** Planned prerequisites anywhere in a task's dependency chain. */
+export function plannedPrerequisites(task: Task, tasks: Map<string, Task>): string[] {
+	const visited = new Set<string>()
+	const planned: string[] = []
+	function visit(id: string): void {
+		if (visited.has(id)) return
+		visited.add(id)
+		const dependency = tasks.get(id)!
+		if (dependency.status === 'planned') planned.push(id)
+		for (const need of dependency.needs) visit(need)
+	}
+	for (const need of task.needs) visit(need)
+	return planned
+}
+
 function validateGraph(tasks: Map<string, Task>): void {
 	for (const task of tasks.values()) {
 		for (const need of task.needs) {
