@@ -1,6 +1,6 @@
 # Rules
 
-Keep committing as you go.
+Keep committing as you go. Wrap commit messages to 72 columns.
 
 When a (and only when) commit marks a task as done, end its commit message with a separate line `Implemented task <id>` (for example, `Implemented task ks`). If you know the LLM model id that aided with implementation, mention that too, like: "Implemented task <id> with openai/gpt-6-sol"
 
