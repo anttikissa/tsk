@@ -1,7 +1,7 @@
 {
 	title: 'Set up trusted publishing for future npm releases',
 	description: 'Set up token-free npm trusted publishing from GitHub Actions using OIDC after the first manual release. Document npm-side setup and verify the workflow on a future release.',
-	status: 'planned',
-	notes: 'GitHub Actions is enabled; .github/workflows/publish.yml is on main but not publish-verified. Active v* tag ruleset restricts create/update/delete to anttikissa bypass: https://github.com/anttikissa/tsk/rules/23988798. Main is not protected; agree on review/bypass policy before adding a main ruleset. On npmjs.com, connect trusted publisher anttikissa/tsk, workflow publish.yml, no environment, direct npm publish allowed. Verify an authorized new release, then copy working GitHub workflow YAML into this task for rebuilds.',
+	status: 'done',
+	notes: 'Verified v0.1.1 trusted publish: https://github.com/anttikissa/tsk/actions/runs/36118499689; npm registry reports 0.1.1 as latest with signed provenance. The exact tested workflow is bundled as publish.yml in this task. The active v* tag ruleset allows only anttikissa to bypass create/update/delete restrictions: https://github.com/anttikissa/tsk/rules/23988798. Main is not protected; agree on a review/bypass policy before adding a main ruleset. The successful run warned that setup-node@v4 ignores package-manager-cache and that v4 actions target deprecated Node 20.',
 	needs: ['m4']
 }

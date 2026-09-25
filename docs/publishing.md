@@ -1,6 +1,6 @@
 # Publishing @anttikissa/tsk
 
-The initial `0.1.0` release was published manually. Future releases are intended to use [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) from GitHub Actions, without an npm token in GitHub secrets.
+The initial `0.1.0` release was published manually. Release `0.1.1` verified [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) from GitHub Actions without an npm token in GitHub secrets.
 
 ## One-time npm setup (package owner)
 
@@ -17,4 +17,4 @@ npm does not validate the trusted publisher fields at save time. An `npm publish
 3. Inspect the GitHub Actions **Publish to npm** run for the release tag. Confirm `npm view @anttikissa/tsk@<version> version` returns the new version and that the npm package page shows the provenance link to the correct GitHub repository, commit, and workflow. npm automatically generates provenance for public packages in public GitHub repositories published using trusted publishing. Verify the linked run and package contents before announcing the release. If publication fails, diagnose the workflow/npm connection; never reuse the same version for different contents.
 4. After a successful trusted publish, consider **Settings → Publishing access → Require two-factor authentication and disallow tokens** and revoke obsolete automation tokens. This restriction does not disable OIDC publishes. Keep an owner recovery plan before removing token-based publishing.
 
-The workflow configuration is not proof that the npm-side connection exists or works: record successful verification only after an actual future release. npm trusted publisher connections cannot be edited in place; to change the workflow filename, repository, or other fixed fields, delete and recreate the connection on npmjs.com.
+Verified on `v0.1.1`: [GitHub Actions run 36118499689](https://github.com/anttikissa/tsk/actions/runs/36118499689) published [`@anttikissa/tsk@0.1.1`](https://www.npmjs.com/package/@anttikissa/tsk/v/0.1.1) with [signed provenance](https://registry.npmjs.org/-/npm/v1/attestations/@anttikissa%2ftsk@0.1.1). The npm trusted publisher connection cannot be edited in place; to change its workflow filename, repository, or other fixed fields, delete and recreate the connection on npmjs.com.
