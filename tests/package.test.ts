@@ -1,7 +1,7 @@
 // Smoke test for task ma: install the packed package with npm and Bun in
 // disposable prefixes and drive the installed tsk against a fresh Git repo.
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -36,6 +36,8 @@ function sh(cmd: string[], cwd: string, env: Record<string, string>) {
 
 beforeAll(() => {
 	sandbox = mkdtempSync(join(tmpdir(), 'tsk-pack-'))
+	mkdirSync(join(root, 'dist'), { recursive: true })
+	writeFileSync(join(root, 'dist', 'obsolete.js'), 'stale build output')
 	sh(['npm', 'pack', '--pack-destination', sandbox], root, isolatedEnv())
 	tarball = join(sandbox, readdirSync(sandbox).find((f) => f.endsWith('.tgz'))!)
 }, 60_000)
@@ -57,9 +59,14 @@ function exercise(tsk: string, env: Record<string, string>) {
 	expect(run('ls')).toContain("title: 'Second'")
 }
 
-test('the packed package contains only the launcher, compiled runtime, and docs', () => {
+test('the packed package includes source and changelog but no stale build output', () => {
 	const files = sh(['tar', '-tzf', tarball], sandbox, isolatedEnv()).trim().split('\n').sort()
-	expect(files).toEqual(['LICENSE', 'README.md', 'dist/add.js', 'dist/ason.js', 'dist/cli.js', 'dist/init.js', 'dist/project.js', 'package.json', 'run'].map((f) => `package/${f}`))
+	expect(files).toEqual([
+		'CHANGELOG.md', 'LICENSE', 'README.md',
+		'dist/add.js', 'dist/ason.js', 'dist/cli.js', 'dist/init.js', 'dist/project.js',
+		'package.json', 'run',
+		'src/add.ts', 'src/ason.ts', 'src/cli.ts', 'src/init.ts', 'src/project.ts',
+	].map((f) => `package/${f}`).sort())
 })
 
 test('npm install -g of the packed package runs tsk', () => {

@@ -16,7 +16,11 @@
   },
   "files": [
     "run",
-    "dist/*.js"
+    "dist/*.js",
+    "src/*.ts",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "engines": {
     "bun": ">=1.2",
@@ -26,7 +30,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json",
     "prepack": "npm run build",
     "test": "bun test",
     "typecheck": "tsc --noEmit"

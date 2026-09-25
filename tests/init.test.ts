@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDir, tsk } from './helpers.ts'
 
@@ -14,7 +14,7 @@ test('init creates tasks/ at the Git root from a subdirectory', () => {
 	mkdirSync(join(root, 'src'))
 	const { code, out } = tsk(join(root, 'src'), 'init')
 	expect(code).toBe(0)
-	expect(out).toBe(`Created ${join(root, 'tasks')}\n`)
+	expect(out).toBe(`Created ${realpathSync(join(root, 'tasks'))}\n`)
 	expect(readdirSync(join(root, 'tasks')).sort()).toEqual(['README.md', 'project.ason'])
 	expect(readFileSync(join(root, 'tasks', 'project.ason'), 'utf8')).toBe("{ format: 'tsk', version: 1 }\n")
 	expect(tsk(root, 'ls').out).toBe('[]\n')

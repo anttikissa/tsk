@@ -1,4 +1,4 @@
-import { beforeAll, expect, test } from 'bun:test'
+import { expect, test } from 'bun:test'
 import { chmodSync, cpSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -20,10 +20,6 @@ function runWith(launcher: string, path: string, cwd: string, ...args: string[])
 	return { code: result.exitCode, out: result.stdout.toString(), err: result.stderr.toString() }
 }
 
-beforeAll(() => {
-	expect(Bun.spawnSync(['bun', 'run', 'build'], { cwd: root }).exitCode).toBe(0)
-})
-
 test('the checkout runs with Node alone', () => {
 	const repo = makeRepo({ a: task('done'), b: task('planned', ['a']) })
 	const result = runWith(RUN, pathWith({ node }), repo, 'ready')
@@ -34,7 +30,11 @@ test('the checkout runs with Node alone', () => {
 test('an installed package runs from node_modules with Node alone', () => {
 	const pkg = join(tempDir(), 'node_modules', '@anttikissa', 'tsk')
 	mkdirSync(pkg, { recursive: true })
-	for (const file of ['run', 'package.json', 'dist']) cpSync(join(root, file), join(pkg, file), { recursive: true })
+	for (const file of ['run', 'package.json']) cpSync(join(root, file), join(pkg, file))
+	const output = tempDir('tsk-compiled-')
+	const built = Bun.spawnSync([join(root, 'node_modules', '.bin', 'tsc'), '-p', 'tsconfig.build.json', '--outDir', output], { cwd: root })
+	expect(built.exitCode).toBe(0)
+	cpSync(output, join(pkg, 'dist'), { recursive: true })
 	const bin = pathWith({ node, tsk: join(pkg, 'run') })
 	const result = runWith(join(bin, 'tsk'), bin, makeRepo({ a: task('planned') }), 'done', 'a')
 	expect(result).toMatchObject({ code: 0, err: '' })
