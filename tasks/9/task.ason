@@ -3,7 +3,7 @@
 	description: 'Read ASON into values and write normalized ASON using the attached ason.ts as the reference implementation. Accept comments and trailing commas on input; preserve supported comments when requested, but do not promise to preserve original whitespace, quote style, or trailing commas on output. Report malformed input clearly.',
 	status: 'done',
 	notes: [
-		'The attached writer round-trips every existing task.ason byte for byte as stringify(value) plus a newline (see roundtrip.reference.test.ts). It wraps objects that do not fit on one line, so derive expected CLI output with stringify instead of hand-writing layouts.'
+		'Reading, writing, and reading again yields the same value for every task.ason (see roundtrip.reference.test.ts); in practice the 0.2.0 writer also reproduced the files exactly. It wraps objects that do not fit on one line, so derive expected CLI output with stringify instead of hand-writing layouts.'
 	],
 	needs: ['e']
 }

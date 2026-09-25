@@ -1,4 +1,4 @@
-// Reference behavior for task 9: the writer reproduces existing task records exactly.
+// Reference behavior for task 9: writing a task record and reading it back yields the same value.
 import { expect, test } from 'bun:test'
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -7,11 +7,11 @@ import { parse, stringify } from './ason.ts'
 
 const tasks = fileURLToPath(new URL('..', import.meta.url))
 
-test('every task.ason round-trips through parse and stringify', () => {
+test('every task.ason keeps its value through stringify and parse', () => {
 	for (const id of readdirSync(tasks)) {
 		const path = join(tasks, id, 'task.ason')
 		if (!existsSync(path)) continue
-		const source = readFileSync(path, 'utf8')
-		expect(stringify(parse(source)) + '\n').toBe(source)
+		const value = parse(readFileSync(path, 'utf8'))
+		expect(parse(stringify(value))).toEqual(value)
 	}
 })

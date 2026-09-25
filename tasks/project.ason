@@ -1,1 +1,5 @@
-{ format: 'tsk', version: 1 }
+{
+	format: 'tsk',
+	version: 1,
+	keep: ['.github/workflows/publish.yml', 'AGENTS.md', 'CHANGELOG.md', 'LICENSE', 'README.md']
+}
