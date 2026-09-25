@@ -1,6 +1,6 @@
 {
 	title: 'Mark a task done',
 	description: 'tsk done <id> changes a planned task to done in its task.ason and prints the updated task as ASON. Refuse an unknown ID or a task with any unfinished prerequisite in its dependency chain, including behind completed one-off tasks; fail if the task is already done.',
-	status: 'done',
+	status: 'planned',
 	needs: ['r']
 }

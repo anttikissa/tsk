@@ -1,6 +1,6 @@
 {
 	title: 'List tasks',
 	description: 'tsk ls prints a compact ASON list of all tasks, sorted by ID, with ID, title, status, and needs for each. Print [] for an empty project; leave descriptions and dependency details to tsk show.',
-	status: 'done',
+	status: 'planned',
 	needs: ['r']
 }

@@ -1,6 +1,6 @@
 {
 	title: 'ASON read and write support',
 	description: 'Read ASON into values and write normalized ASON using the attached ason.ts as the reference implementation. Accept comments and trailing commas on input; preserve supported comments when requested, but do not promise to preserve original whitespace, quote style, or trailing commas on output. Report malformed input clearly.',
-	status: 'done',
+	status: 'planned',
 	needs: ['e']
 }

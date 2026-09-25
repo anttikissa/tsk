@@ -1,6 +1,6 @@
 {
 	title: 'Show a task',
 	description: 'tsk show <id> prints ASON with ID, title, description, status, optional once and notes, direct dependencies as { id, title, status } summaries in needs, and direct dependents as IDs in neededBy. Include empty lists where appropriate and report unknown IDs clearly.',
-	status: 'done',
+	status: 'planned',
 	needs: ['r']
 }
