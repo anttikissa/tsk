@@ -63,6 +63,27 @@ test('validates task records and reports their file', async () => {
 	await expect(loadProject(root)).rejects.toThrow('Task a needs missing task x')
 })
 
+test('loads optional one-off and notes fields, and rejects malformed values', async () => {
+	const root = await fixture()
+	const path = join(root, 'tasks', 'a', 'task.ason')
+	const base = "title: 'A', description: 'A task', status: 'done', needs: []"
+	await task(root, 'a', `{ ${base}, once: true, notes: ['Published 0.1.0', 'Verified provenance'] }`)
+	expect((await loadProject(root)).tasks.get('a')).toMatchObject({
+		once: true,
+		notes: ['Published 0.1.0', 'Verified provenance'],
+	})
+	await writeFile(path, `{ ${base}, once: false, notes: [] }`)
+	expect((await loadProject(root)).tasks.get('a')).toMatchObject({ once: false, notes: [] })
+	for (const [field, message] of [
+		["once: 'yes'", 'once must be a boolean'],
+		["notes: 'text'", 'notes must be a list of strings'],
+		["notes: ['text', 1]", 'notes must be a list of strings'],
+	]) {
+		await writeFile(path, `{ ${base}, ${field} }`)
+		await expect(loadProject(root)).rejects.toThrow(`tasks/a/task.ason: ${message}`)
+	}
+})
+
 test('reports dependency cycles with the path through the graph', async () => {
 	const root = await fixture()
 	await task(root, 'a', "{ title: 'A', description: '', status: 'planned', needs: ['b'] }")

@@ -21,6 +21,8 @@ export async function showTask(id: string, cwd = process.cwd()): Promise<string>
 		title: task.title,
 		description: task.description,
 		status: task.status,
+		...(task.once === undefined ? {} : { once: task.once }),
+		...(task.notes === undefined ? {} : { notes: task.notes }),
 		needs,
 		neededBy,
 	})

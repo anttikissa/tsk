@@ -10,6 +10,8 @@ export type Task = {
 	description: string
 	status: 'planned' | 'done'
 	needs: string[]
+	once?: boolean
+	notes?: string[]
 }
 
 export type Project = {
@@ -67,7 +69,15 @@ function taskFrom(value: unknown, id: string, path: string): Task {
 	}
 	const needs = value.needs as string[]
 	if (new Set(needs).size !== needs.length) throw new Error(`${path}: needs contains duplicate IDs`)
-	return { id, title: value.title, description: value.description, status: value.status, needs }
+	if ('once' in value && typeof value.once !== 'boolean') throw new Error(`${path}: once must be a boolean`)
+	if ('notes' in value && (!Array.isArray(value.notes) || !value.notes.every((note) => typeof note === 'string'))) {
+		throw new Error(`${path}: notes must be a list of strings`)
+	}
+	return {
+		id, title: value.title, description: value.description, status: value.status, needs,
+		...('once' in value ? { once: value.once as boolean } : {}),
+		...('notes' in value ? { notes: value.notes as string[] } : {}),
+	}
 }
 
 function validateGraph(tasks: Map<string, Task>): void {

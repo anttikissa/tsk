@@ -60,6 +60,18 @@ test('show includes empty link lists for an unlinked task', async () => {
 	expect(parse(result.stdout.toString())).toMatchObject({ needs: [], neededBy: [] })
 })
 
+test('show includes one-off status and notes when present', async () => {
+	const root = await fixture()
+	await task(root, 'a', 'First release', 'done', [])
+	await writeFile(join(root, 'tasks', 'a', 'task.ason'), "{ title: 'First release', description: 'Publish 0.1.0', status: 'done', needs: [], once: true, notes: ['Published on npm', 'Verified package'] }")
+	const result = show(root, 'a')
+	expect(result.exitCode).toBe(0)
+	expect(parse(result.stdout.toString())).toMatchObject({
+		once: true,
+		notes: ['Published on npm', 'Verified package'],
+	})
+})
+
 test('show rejects missing IDs and incorrect argument counts', async () => {
 	const root = await fixture()
 	const unknown = show(root, 'missing')
