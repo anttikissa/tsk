@@ -1,7 +1,9 @@
 // The single Tsk CLI implementation.
 
-import { stringify } from './ason.ts'
-import { loadProject, TskError, type Task } from './project.ts'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { parse, stringify, type AsonObject } from './ason.ts'
+import { formatAson, getTask, loadProject, orderRecord, TskError, unfinishedPrerequisites, type Task } from './project.ts'
 
 type Command = (args: string[], cwd: string) => void | Promise<void>
 
@@ -17,11 +19,57 @@ function noArgs(name: string, args: string[]): void {
 	if (args.length) throw new TskError(`${name} takes no arguments`)
 }
 
+function oneId(name: string, args: string[]): string {
+	if (args.length !== 1) throw new TskError(`usage: tsk ${name} <id>`)
+	return args[0]!
+}
+
 const commands: Record<string, Command> = {
 	ls(args, cwd) {
 		noArgs('ls', args)
 		const { tasks } = loadProject(cwd)
 		print(sortedTasks(tasks).map(({ id, title, status, needs }) => ({ id, title, status, needs })))
+	},
+
+	ready(args, cwd) {
+		noArgs('ready', args)
+		const { tasks } = loadProject(cwd)
+		const ready = sortedTasks(tasks).filter((task) => task.status === 'planned' && !unfinishedPrerequisites(tasks, task.id).length)
+		print(ready.map(({ id, title, description, status, needs }) => ({ id, title, description, status, needs })))
+	},
+
+	show(args, cwd) {
+		const project = loadProject(cwd)
+		const task = getTask(project, oneId('show', args))
+		const { id, title, description, status, once, notes } = task
+		print({
+			id,
+			title,
+			description,
+			status,
+			...(once !== undefined && { once }),
+			...(notes !== undefined && { notes }),
+			needs: task.needs.map((need) => {
+				const { id, title, status } = project.tasks.get(need)!
+				return { id, title, status }
+			}),
+			neededBy: sortedTasks(project.tasks).filter((other) => other.needs.includes(id)).map((other) => other.id),
+		})
+	},
+
+	done(args, cwd) {
+		const project = loadProject(cwd)
+		const task = getTask(project, oneId('done', args))
+		if (task.status === 'done') throw new TskError(`task ${task.id} is already done`)
+		const unfinished = unfinishedPrerequisites(project.tasks, task.id)
+		if (unfinished.length) throw new TskError(`task ${task.id} has unfinished prerequisites: ${unfinished.map((t) => t.id).join(', ')}`)
+		// Rewrite the parsed file rather than the validated record so supported comments survive.
+		const path = join(project.tasksDir, task.id, 'task.ason')
+		const record = parse(readFileSync(path, 'utf8'), { comments: true }) as AsonObject
+		record.status = 'done'
+		writeFileSync(path, formatAson(record))
+		const { id, ...rest } = { ...task, status: 'done' as const }
+		print({ id, ...orderRecord(rest) })
 	},
 }
 
