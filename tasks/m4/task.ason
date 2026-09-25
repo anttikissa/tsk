@@ -1,6 +1,6 @@
 {
 	title: 'Publish initial npm release (0.1.0)',
-	description: 'Prepare and manually publish Tsk 0.1.0 to npm after the initial changelog. Confirm the public package name, version, repository metadata, executable, shipped files, and documented Bun requirement. Run tests, typecheck, npm pack --dry-run, and verify the installed tarball runs. Publish with npm login and 2FA; do not commit credentials or tokens. Tag the release and confirm the published package can be installed. Mark done only after publication and verification.',
+	description: 'Manually publish @anttikissa/tsk@0.1.0 after the initial changelog. Verify the package contents and installed CLI, then tag the release. Keep credentials out of Git; mark this task done only after publication.',
 	status: 'done',
 	needs: ['rv']
 }

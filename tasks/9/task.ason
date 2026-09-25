@@ -1,6 +1,6 @@
 {
 	title: 'ASON read and write support',
-	description: 'Read and write ASON, using the attached ason.ts as the reference implementation. Test parsing project.ason and task.ason, round-tripping values, comments and trailing commas, and reporting malformed input.',
+	description: 'Read and write ASON using the attached ason.ts as the reference implementation. Support comments and trailing commas, and report malformed input clearly.',
 	status: 'done',
 	needs: ['e']
 }

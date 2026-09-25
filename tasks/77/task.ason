@@ -1,6 +1,6 @@
 {
 	title: 'Command help',
-	description: 'tsk help, tsk --help, and tsk -h show the same concise usage guide and succeed. List only the commands available in this build, each with a short description. Keep no-argument usage helpful, and test that all help forms agree. When a command is added or removed, update help in the same commit.',
+	description: 'tsk help, tsk --help, and tsk -h show the same concise usage guide with the commands available in this build. No-argument usage is helpful.',
 	status: 'done',
 	needs: ['6']
 }
