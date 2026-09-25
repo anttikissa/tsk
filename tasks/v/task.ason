@@ -1,6 +1,6 @@
 {
 	title: 'Run and install Tsk',
 	description: 'Provide ./run as the sole launcher for the checkout and installed tsk command, working from anywhere and through symlinks while forwarding arguments and exit status. Provide an idempotent ./install that installs dependencies, links ~/.local/bin/tsk to ./run without overwriting an unrelated file, and helps put it on PATH. Initially run with Bun.',
-	status: 'planned',
+	status: 'done',
 	needs: ['e']
 }

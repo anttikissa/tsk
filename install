@@ -1,0 +1,30 @@
+#!/bin/sh
+# Install dependencies and link ~/.local/bin/tsk to this checkout's ./run.
+set -e
+root=$(cd "$(dirname "$0")" && pwd)
+bin=$HOME/.local/bin
+link=$bin/tsk
+
+command -v bun >/dev/null || { echo 'install: Bun is required: https://bun.sh' >&2; exit 1; }
+(cd "$root" && bun install)
+
+mkdir -p "$bin"
+if [ -L "$link" ]; then
+	current=$(readlink "$link")
+	if [ "$current" != "$root/run" ]; then
+		case $current in
+			*/run) ;;
+			*) echo "install: $link links to $current; remove it first" >&2; exit 1 ;;
+		esac
+	fi
+elif [ -e "$link" ]; then
+	echo "install: $link exists and is not a link; remove it first" >&2
+	exit 1
+fi
+ln -sfn "$root/run" "$link"
+echo "Linked $link -> $root/run"
+
+case ":$PATH:" in
+	*":$bin:"*) ;;
+	*) echo "Add $bin to PATH, e.g.: echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.profile" ;;
+esac

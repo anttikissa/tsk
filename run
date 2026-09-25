@@ -1,2 +1,13 @@
 #!/bin/sh
-exec bun "$(dirname "$0")/src/cli.ts" "$@"
+# The sole Tsk launcher, for the checkout and the installed tsk command.
+set -e
+self=$0
+while [ -L "$self" ]; do
+	target=$(readlink "$self")
+	case $target in
+		/*) self=$target ;;
+		*) self=$(dirname "$self")/$target ;;
+	esac
+done
+root=$(cd "$(dirname "$self")" && pwd)
+exec bun "$root/src/cli.ts" "$@"
