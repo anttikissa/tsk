@@ -5,9 +5,11 @@
   "type": "module",
   "license": "MIT",
   "repository": { "type": "git", "url": "git+https://github.com/anttikissa/tsk.git" },
-  "keywords": ["tasks", "task-manager", "agents", "git", "bun"],
-  "bin": { "tsk": "src/cli.ts" },
+  "keywords": ["tasks", "task-manager", "agents", "git", "node", "bun"],
+  "bin": { "tsk": "run" },
   "files": [
+    "run",
+    "dist/",
     "src/cli.ts",
     "src/add.ts",
     "src/done.ts",
@@ -20,9 +22,11 @@
     "LICENSE"
   ],
   "scripts": {
-    "tsk": "bun src/cli.ts",
+    "tsk": "./run",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --project tsconfig.build.json",
+    "prepack": "tsc --project tsconfig.build.json"
   },
   "devDependencies": {
     "@types/bun": "latest",
