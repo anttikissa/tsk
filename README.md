@@ -25,8 +25,8 @@ while planned tasks remain:
 - a status (`planned` or `done`);
 - a list of dependencies, such as `['r']`;
 - optionally, `once: true` for one-off work, such as an initial publication. A rebuild keeps completed one-off tasks done instead of repeating them;
-- optionally, `notes` for observations about what happened;
-- optionally, artifacts (e.g. screenshots, tests, or detailed specifications) alongside `task.ason`.
+- optionally, `notes` for observations about what happened during a rewrite or while modifying a completed task;
+- optionally, artifact files (e.g. screenshots, tests, or detailed specifications) alongside `task.ason`.
 
 Task IDs use lowercase Crockford base32. Early IDs are short, like `r` or `9`, and grow longer as the task list grows.
 
