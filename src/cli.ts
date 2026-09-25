@@ -1,5 +1,6 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 // Tsk command-line entry point.
+import { readFile } from 'node:fs/promises'
 import { parseArgs } from 'node:util'
 import { addTask } from './add.ts'
 import { doneTask } from './done.ts'
@@ -18,7 +19,13 @@ Commands:
   show    Show one task and its direct links: <id>
   ls      List all tasks (ID, title, status, needs)
   ready   List planned tasks whose dependencies are done
+  version Print the installed Tsk version
   help    Show this usage guide`
+
+async function versionLine(): Promise<string> {
+	const metadata = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
+	return `tsk ${metadata.version}`
+}
 
 async function add(args: string[]): Promise<void> {
 	const { values, positionals } = parseArgs({
@@ -50,14 +57,15 @@ async function done(args: string[]): Promise<void> {
 
 export async function main(args: string[]): Promise<number> {
 	const [command, ...rest] = args
-	if (command === undefined || command === '--help' || command === '-h') {
-		console.log(usage)
-		return 0
-	}
 	try {
-		if (command === 'help') {
-			if (rest.length) throw new Error(`help takes no arguments, got '${rest.join(' ')}'`)
-			console.log(usage)
+		if (command === undefined || command === '--help' || command === '-h' || command === 'help') {
+			if (command === 'help' && rest.length) throw new Error(`help takes no arguments, got '${rest.join(' ')}'`)
+			console.log(`${await versionLine()}\n\n${usage}`)
+			return 0
+		}
+		if (command === '--version' || command === 'version') {
+			if (rest.length) throw new Error(`version takes no arguments, got '${rest.join(' ')}'`)
+			console.log(await versionLine())
 			return 0
 		}
 		if (command === 'init') {

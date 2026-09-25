@@ -44,21 +44,22 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | `tsk ready` | List planned tasks whose dependencies are all done. |
 | `tsk show <id>` | Show a task with its direct dependencies and dependents. |
 | `tsk done <id>` | Mark a task done, provided all its dependencies are done. |
-| `tsk help` (or `tsk --help`, `tsk -h`) | Show the current command summary. |
+| `tsk version` (or `tsk --version`) | Print the installed package version. |
+| `tsk help` (or `tsk --help`, `tsk -h`) | Show the current command summary and version. |
 
 Task listings and `tsk add` print ASON. For example, `tsk add --title 'Write tests' --description 'Cover the parser' --needs r --needs e` creates a task that depends on both `r` and `e`. Repeat `--needs` once per dependency.
 
 ## Installing
 
-Tsk requires [Bun](https://bun.sh). Install Tsk globally with:
+Tsk requires Node.js 22.18 or newer, or [Bun](https://bun.sh). Install Tsk globally with either package manager:
 
 ```sh
+npm install -g @anttikissa/tsk
+# or
 bun install -g @anttikissa/tsk
 ```
 
-Keep Bun on your `PATH` to run the `tsk` command.
-
-For development from a clone, run `./install` to install dependencies and link `tsk` into `~/.local/bin`. Or run `bun install` and invoke the checkout without installing it via `./run <command>`.
+For development from a clone, run `./install` to install dependencies with an available package manager and link `tsk` into `~/.local/bin`. Or invoke the checkout without installing it via `./run <command>`; the launcher works with either runtime.
 
 ## Release history
 
