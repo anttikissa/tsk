@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.2.1)
+## 0.2.1 — 2026-09-25
 
 - Added `tsk reset`, which sets done tasks back to planned for a rebuild, except `once: true` tasks.
 - `tsk show` lists the files in a task's directory as `artifacts`.
