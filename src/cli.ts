@@ -21,6 +21,7 @@ Commands:
   ready   List planned tasks whose dependencies are done
   show    Show one task and its direct links: <id>
   done    Mark a task done: <id>
+  reset   Set done tasks back to planned, except once: true tasks
   version Print the installed Tsk version
   help    Show this usage guide`
 
@@ -100,14 +101,26 @@ const commands: Record<string, Command> = {
 		if (task.status === 'done') throw new TskError(`task ${task.id} is already done`)
 		const unfinished = unfinishedPrerequisites(project.tasks, task.id)
 		if (unfinished.length) throw new TskError(`task ${task.id} has unfinished prerequisites: ${unfinished.map((t) => t.id).join(', ')}`)
-		// Rewrite the parsed file rather than the validated record so supported comments survive.
-		const path = join(project.tasksDir, task.id, 'task.ason')
-		const record = parse(readFileSync(path, 'utf8'), { comments: true }) as AsonObject
-		record.status = 'done'
-		writeFileSync(path, formatAson(record))
+		setStatus(project.tasksDir, task.id, 'done')
 		const { id, ...rest } = { ...task, status: 'done' as const }
 		print({ id, ...orderRecord(rest) })
 	},
+
+	reset(args, cwd) {
+		noArgs('reset', args)
+		const project = loadProject(cwd)
+		const changed = sortedTasks(project.tasks).filter((task) => task.status === 'done' && !task.once)
+		for (const task of changed) setStatus(project.tasksDir, task.id, 'planned')
+		print(changed.map((task) => task.id))
+	},
+}
+
+/** Rewrite the parsed file rather than the validated record so supported comments survive. */
+function setStatus(tasksDir: string, id: string, status: Task['status']): void {
+	const path = join(tasksDir, id, 'task.ason')
+	const record = parse(readFileSync(path, 'utf8'), { comments: true }) as AsonObject
+	record.status = status
+	writeFileSync(path, formatAson(record))
 }
 
 export async function main(args: string[], cwd = process.cwd()): Promise<number> {

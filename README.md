@@ -46,6 +46,7 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | `tsk ready` | List planned tasks whose dependencies are all done. |
 | `tsk show <id>` | Show a task with its direct dependencies and dependents. |
 | `tsk done <id>` | Mark a task done, provided all its dependencies are done. |
+| `tsk reset` | Set done tasks back to planned for a rebuild, except `once: true` tasks. |
 | `tsk version` (or `tsk --version`) | Print the installed package version. |
 | `tsk help` (or `tsk --help`, `tsk -h`) | Show the current command summary and version. |
 

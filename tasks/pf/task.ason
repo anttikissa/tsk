@@ -1,6 +1,6 @@
 {
 	title: 'Reset tasks for a rebuild',
 	description: 'tsk reset sets every done task back to planned, except once: true tasks, and prints the IDs it changed. It keeps comments in task.ason and changes nothing else; running it again changes nothing.',
-	status: 'planned',
+	status: 'done',
 	needs: ['ks']
 }
