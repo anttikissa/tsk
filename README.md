@@ -46,7 +46,7 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | `tsk done <id>` | Mark a task done, provided all its dependencies are done. |
 | `tsk help` (or `tsk --help`, `tsk -h`) | Show the current command summary. |
 
-Task listings and `tsk add` print ASON. For example, `tsk add --title 'Write tests' --description 'Cover the parser' --needs r` creates a task that depends on `r`.
+Task listings and `tsk add` print ASON. For example, `tsk add --title 'Write tests' --description 'Cover the parser' --needs r --needs e` creates a task that depends on both `r` and `e`. Repeat `--needs` once per dependency.
 
 ## Installing
 
