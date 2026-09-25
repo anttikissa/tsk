@@ -1,6 +1,6 @@
 {
 	title: 'Command help',
 	description: 'tsk help, tsk --help, and tsk -h show the same concise usage guide with the commands available in this build. No-argument usage is helpful.',
-	status: 'planned',
+	status: 'done',
 	needs: ['6']
 }

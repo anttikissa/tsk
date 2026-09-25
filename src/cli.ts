@@ -7,6 +7,18 @@ import { init } from './init.ts'
 import { parse, stringify, type AsonObject } from './ason.ts'
 import { formatAson, getTask, loadProject, orderRecord, TskError, unfinishedPrerequisites, type Task } from './project.ts'
 
+const USAGE = `Usage: tsk <command>
+
+Commands:
+  init    Create tasks/ at the nearest Git root
+  add     Add a task: --title <text> --description <text>
+          [--status planned|done] [--needs <id>]...
+  ls      List all tasks (ID, title, status, needs)
+  ready   List planned tasks whose dependencies are done
+  show    Show one task and its direct links: <id>
+  done    Mark a task done: <id>
+  help    Show this usage guide`
+
 type Command = (args: string[], cwd: string) => void | Promise<void>
 
 function print(value: unknown): void {
@@ -27,6 +39,10 @@ function oneId(name: string, args: string[]): string {
 }
 
 const commands: Record<string, Command> = {
+	help() {
+		console.log(USAGE)
+	},
+
 	add(args, cwd) {
 		print(add(args, cwd))
 	},
@@ -85,10 +101,11 @@ const commands: Record<string, Command> = {
 }
 
 export async function main(args: string[], cwd = process.cwd()): Promise<number> {
-	const [name, ...rest] = args
-	const command = name !== undefined && Object.hasOwn(commands, name) ? commands[name] : undefined
+	const [given, ...rest] = args
+	const name = given === undefined || given === '--help' || given === '-h' ? 'help' : given
+	const command = Object.hasOwn(commands, name) ? commands[name] : undefined
 	try {
-		if (!command) throw new TskError(`unknown command: ${name ?? '(none)'}`)
+		if (!command) throw new TskError(`unknown command: ${name}; run tsk help for usage`)
 		await command(rest, cwd)
 		return 0
 	} catch (error) {
