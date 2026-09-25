@@ -1,0 +1,6 @@
+{
+	title: 'Run installed Tsk with Node or Bun (0.2.0)',
+	description: 'An npm global install runs tsk with Node when Bun is absent; a Bun global install runs tsk with Bun when Node is absent. Preserve CLI behavior on both runtimes without requiring install-time scripts. Verify both runtime-isolated installation paths.',
+	status: 'planned',
+	needs: []
+}
