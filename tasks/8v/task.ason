@@ -2,6 +2,6 @@
 	title: 'Set up trusted publishing for future npm releases',
 	description: 'Set up token-free npm trusted publishing from GitHub Actions using OIDC after the first manual release. Document npm-side setup and verify the workflow on a future release.',
 	status: 'planned',
-	notes: 'GitHub Actions workflow: .github/workflows/publish.yml (not verified). On npmjs.com, add a trusted publisher for anttikissa/tsk with workflow filename publish.yml, no environment, and direct npm publish allowed. Verify an authorized new release, then copy the working GitHub workflow YAML into this task as a supporting file for rebuilds.',
+	notes: 'GitHub Actions is enabled; .github/workflows/publish.yml is on main but not publish-verified. Active v* tag ruleset restricts create/update/delete to anttikissa bypass: https://github.com/anttikissa/tsk/rules/23988798. Main is not protected; agree on review/bypass policy before adding a main ruleset. On npmjs.com, connect trusted publisher anttikissa/tsk, workflow publish.yml, no environment, direct npm publish allowed. Verify an authorized new release, then copy working GitHub workflow YAML into this task for rebuilds.',
 	needs: ['m4']
 }
