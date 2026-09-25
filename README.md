@@ -24,6 +24,8 @@ while planned tasks remain:
 - a description of what to build, such as `tsk done <id> marks a task done when its dependencies are done`;
 - a status (`planned` or `done`);
 - a list of dependencies, such as `['r']`;
+- optionally, `once: true` for one-off work, such as an initial publication. A rebuild keeps completed one-off tasks done instead of repeating them;
+- optionally, `notes` for observations about what happened;
 - optionally, supporting files (e.g. screenshots, tests, or detailed specifications).
 
 Task IDs use lowercase Crockford base32. Early IDs are short, like `r` or `9`, and grow longer as the task list grows.

@@ -1,6 +1,6 @@
 {
 	title: 'Versioned task blueprint',
-	description: 'A Git repository contains a tasks/ directory with a Tsk format marker, a freeform README for shared build context, and flat ID directories with ASON task records. Task records may include once: true for one-off work and notes as a list of observations. The initial records describe Tsk itself; they can be read without a working CLI.',
+	description: 'A Git repository contains a tasks/ directory with a Tsk format marker, a freeform README for shared build context, and flat ID directories with ASON task records. Document optional once: true for one-off work that stays done across rebuilds and notes as a list of observations. The initial records describe Tsk itself; they can be read without a working CLI.',
 	status: 'done',
 	needs: []
 }
