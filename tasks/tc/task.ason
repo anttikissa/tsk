@@ -1,6 +1,6 @@
 {
 	title: 'Public npm package metadata',
 	description: 'Prepare a public Bun-first @anttikissa/tsk package. Versions start at 0.1.0; when rebuilding, keep the latest released version, found in Git history (Release vX.Y.Z commits). Point the package tsk bin to the same ./run launcher used from the checkout and by ./install; ship that launcher with the CLI runtime files, README, and MIT license. Document Bun installation and its runtime requirement. Inspect npm pack output; do not publish yet.',
-	status: 'planned',
+	status: 'done',
 	needs: ['e', 'v']
 }

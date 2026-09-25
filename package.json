@@ -1,7 +1,29 @@
 {
   "name": "@anttikissa/tsk",
   "version": "0.1.1",
+  "description": "A minimal task manager for rebuilding software",
+  "keywords": ["tasks", "cli", "agents", "llm"],
+  "license": "MIT",
+  "author": "Antti Kissaniemi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anttikissa/tsk.git"
+  },
+  "homepage": "https://github.com/anttikissa/tsk#readme",
   "type": "module",
+  "bin": {
+    "tsk": "run"
+  },
+  "files": [
+    "run",
+    "src/*.ts"
+  ],
+  "engines": {
+    "bun": ">=1.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit"
