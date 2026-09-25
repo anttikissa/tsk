@@ -45,7 +45,7 @@ test('records status and needs, rejecting unknown dependencies', async () => {
 	const b = await addTask({ title: 'B', description: 'It\'s "quoted"', needs: [a.id, a.id] }, root)
 	expect(b.needs).toEqual([a.id])
 	expect((await loadProject(root)).tasks.get(b.id)).toEqual(b)
-	const unknown = a.id === 'z' ? 'y' : 'z'
+	const unknown = ['z', 'y', 'x'].find((id) => id !== a.id && id !== b.id)!
 	await expect(addTask({ title: 'C', description: '', needs: [unknown] }, root)).rejects.toThrow(`Unknown task ID in --needs: ${unknown}`)
 	await expect(addTask({ title: '  ', description: '' }, root)).rejects.toThrow('--title')
 	await expect(addTask({ title: 'D', description: '', status: 'doing' as never }, root)).rejects.toThrow('--status')
