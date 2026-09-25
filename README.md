@@ -26,7 +26,7 @@ while planned tasks remain:
 - a list of dependencies, such as `['r']`;
 - optionally, `once: true` for one-off work, such as an initial publication. A rebuild keeps completed one-off tasks done instead of repeating them;
 - optionally, `notes` for observations about what happened;
-- optionally, supporting files (e.g. screenshots, tests, or detailed specifications).
+- optionally, artifacts (e.g. screenshots, tests, or detailed specifications) alongside `task.ason`.
 
 Task IDs use lowercase Crockford base32. Early IDs are short, like `r` or `9`, and grow longer as the task list grows.
 
@@ -44,7 +44,7 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | `tsk add --title <text> --description <text> [--needs <id>]...` | Add a planned task; repeat `--needs` for multiple dependencies. Optionally pass `--status done`. |
 | `tsk ls` | List every task's ID, title, status, and dependencies. |
 | `tsk ready` | List planned tasks whose dependencies are all done. |
-| `tsk show <id>` | Show a task with its direct dependencies and dependents. |
+| `tsk show <id>` | Show a task with its direct dependencies, dependents, and artifact paths. |
 | `tsk done <id>` | Mark a task done, provided all its dependencies are done. |
 | `tsk reset` | Set done tasks back to planned for a rebuild, except `once: true` tasks. |
 | `tsk version` (or `tsk --version`) | Print the installed package version. |

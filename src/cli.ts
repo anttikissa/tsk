@@ -1,6 +1,6 @@
 // The single Tsk CLI implementation.
 
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { add } from './add.ts'
 import { init } from './init.ts'
@@ -19,7 +19,7 @@ Commands:
           [--status planned|done] [--needs <id>]...
   ls      List all tasks (ID, title, status, needs)
   ready   List planned tasks whose dependencies are done
-  show    Show one task and its direct links: <id>
+  show    Show one task, its links and artifacts: <id>
   done    Mark a task done: <id>
   reset   Set done tasks back to planned, except once: true tasks
   version Print the installed Tsk version
@@ -42,6 +42,20 @@ function noArgs(name: string, args: string[]): void {
 function oneId(name: string, args: string[]): string {
 	if (args.length !== 1) throw new TskError(`usage: tsk ${name} <id>`)
 	return args[0]!
+}
+
+function artifactFiles(dir: string): string[] {
+	const paths: string[] = []
+	function visit(relative: string): void {
+		for (const entry of readdirSync(join(dir, relative), { withFileTypes: true })) {
+			const path = relative ? `${relative}/${entry.name}` : entry.name
+			if (!relative && entry.name === 'task.ason') continue
+			if (entry.isDirectory()) visit(path)
+			else if (entry.isFile() || entry.isSymbolicLink()) paths.push(path)
+		}
+	}
+	visit('')
+	return paths.sort()
 }
 
 const commands: Record<string, Command> = {
@@ -92,6 +106,7 @@ const commands: Record<string, Command> = {
 				return { id, title, status }
 			}),
 			neededBy: sortedTasks(project.tasks).filter((other) => other.needs.includes(id)).map((other) => other.id),
+			artifacts: artifactFiles(join(project.tasksDir, id)),
 		})
 	},
 
