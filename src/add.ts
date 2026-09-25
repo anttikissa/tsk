@@ -14,14 +14,14 @@ function randomId(length: number): string {
 }
 
 /**
- * Claim a new task directory. Stay at the shortest length that is less than
- * half full; mkdir fails on collisions, so existing tasks are never overwritten.
+ * Claim a new task directory. Stay at the shortest length at which fewer than
+ * 25% of IDs are taken; mkdir fails on collisions, so existing tasks are never overwritten.
  */
 export function claimId(tasksDir: string, existing: Iterable<string>): string {
 	const taken = new Set(existing)
 	for (let length = 1; ; length++) {
 		const used = [...taken].filter((id) => id.length === length).length
-		if (used * 2 >= ALPHABET.length ** length) continue
+		if (used * 4 >= ALPHABET.length ** length) continue
 		for (let attempt = 0; attempt < ATTEMPTS_PER_LENGTH; attempt++) {
 			const id = randomId(length)
 			if (taken.has(id)) continue

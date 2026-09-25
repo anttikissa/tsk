@@ -38,9 +38,9 @@ test.each([
 	expect(readdirSync(join(root, 'tasks'))).toEqual(['project.ason'])
 })
 
-test('IDs grow longer once short IDs are half used, without reusing existing directories', () => {
+test('IDs grow longer once a quarter of short IDs are used, without reusing existing directories', () => {
 	const dir = tempDir()
-	const singles = ALPHABET.slice(0, 16).split('')
+	const singles = ALPHABET.slice(0, 8).split('')
 	for (const id of singles) mkdirSync(join(dir, id))
 	for (let i = 0; i < 20; i++) {
 		const id = claimId(dir, singles)
