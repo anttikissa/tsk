@@ -2,6 +2,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { add } from './add.ts'
 import { parse, stringify, type AsonObject } from './ason.ts'
 import { formatAson, getTask, loadProject, orderRecord, TskError, unfinishedPrerequisites, type Task } from './project.ts'
 
@@ -25,6 +26,10 @@ function oneId(name: string, args: string[]): string {
 }
 
 const commands: Record<string, Command> = {
+	add(args, cwd) {
+		print(add(args, cwd))
+	},
+
 	ls(args, cwd) {
 		noArgs('ls', args)
 		const { tasks } = loadProject(cwd)
