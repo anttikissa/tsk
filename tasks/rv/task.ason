@@ -1,6 +1,6 @@
 {
 	title: 'Initial changelog',
 	description: 'Add CHANGELOG.md for the first public release, documenting user-visible features, setup requirements (including Bun), and any known limitations. Keep the entry concise and dated, with a version matching the initial release (0.1.0); use the changelog for changes users need to know, not a copy of the task graph. Explain in the README where to find release history.',
-	status: 'planned',
+	status: 'done',
 	needs: []
 }

@@ -62,6 +62,10 @@ Bun must be installed and available on your `PATH` for either install method, be
 
 For development from a clone, run `./install` to install dependencies and link `tsk` into `~/.local/bin`. Or run `bun install` and invoke the checkout without installing it via `./run <command>`.
 
+## Release history
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
