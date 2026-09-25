@@ -1,5 +1,8 @@
 #!/bin/sh
 # The sole Tsk launcher, for the checkout and the installed tsk command.
+# Prefers Bun, falls back to Node.js. A checkout runs src/cli.ts directly;
+# the installed package ships only the compiled dist/cli.js, because Node
+# will not strip types from files under node_modules.
 set -e
 self=$0
 while [ -L "$self" ]; do
@@ -10,4 +13,9 @@ while [ -L "$self" ]; do
 	esac
 done
 root=$(cd "$(dirname "$self")" && pwd)
-exec bun "$root/src/cli.ts" "$@"
+
+if [ -f "$root/src/cli.ts" ]; then entry=$root/src/cli.ts; else entry=$root/dist/cli.js; fi
+if command -v bun >/dev/null 2>&1; then exec bun "$entry" "$@"; fi
+if command -v node >/dev/null 2>&1; then exec node --disable-warning=ExperimentalWarning "$entry" "$@"; fi
+echo 'tsk: Bun or Node.js is required' >&2
+exit 127

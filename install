@@ -5,8 +5,10 @@ root=$(cd "$(dirname "$0")" && pwd)
 bin=$HOME/.local/bin
 link=$bin/tsk
 
-command -v bun >/dev/null || { echo 'install: Bun is required: https://bun.sh' >&2; exit 1; }
-(cd "$root" && bun install)
+if command -v bun >/dev/null 2>&1; then (cd "$root" && bun install)
+elif command -v npm >/dev/null 2>&1; then (cd "$root" && npm install)
+else echo 'install: Bun or Node.js is required' >&2; exit 1
+fi
 
 mkdir -p "$bin"
 if [ -L "$link" ]; then

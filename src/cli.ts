@@ -126,4 +126,4 @@ export async function main(args: string[], cwd = process.cwd()): Promise<number>
 	}
 }
 
-if (import.meta.main) process.exitCode = await main(process.argv.slice(2))
+process.exitCode = await main(process.argv.slice(2))

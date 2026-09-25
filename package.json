@@ -16,15 +16,18 @@
   },
   "files": [
     "run",
-    "src/*.ts"
+    "dist/*.js"
   ],
   "engines": {
-    "bun": ">=1.2"
+    "bun": ">=1.2",
+    "node": ">=22.18"
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
