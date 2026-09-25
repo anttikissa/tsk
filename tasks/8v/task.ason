@@ -1,0 +1,6 @@
+{
+	title: 'Set up trusted publishing for future npm releases',
+	description: 'After the first manual npm release, configure npm trusted publishing for this repository with a GitHub Actions workflow using OIDC. The workflow should use supported Node and npm versions, run release checks, and publish without a stored npm token. Document the one-time package settings required on npm and verify the setup on a future release.',
+	status: 'planned',
+	needs: ['m4']
+}
