@@ -1,6 +1,6 @@
 {
-	title: 'Run installed Tsk with Node or Bun (0.2.0)',
-	description: 'An npm global install runs tsk with Node when Bun is absent; a Bun global install runs tsk with Bun when Node is absent. Preserve CLI behavior on both runtimes without requiring install-time scripts. Verify both runtime-isolated installation paths.',
+	title: 'Support both Node and Bun runtimes',
+	description: './run should support a system where 1) only Node.js is installed, and a system where 2) only Bun is installed. Only support Node.js new enough to run .ts files.',
 	status: 'planned',
 	needs: []
 }

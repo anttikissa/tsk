@@ -9,3 +9,5 @@ When documenting things, don't provide needless examples of incorrect usage. Wro
 When publishing a new version, update CHANGELOG.md. It's a list of relevant things that changed.
 
 When adding tasks, keep descriptions concise: specify the behavior and important constraints, not implementation or test minutiae.
+
+When adding tasks, mention them in commit messages: "Plan version reporting (re) and dual-runtime installation (nw)"
