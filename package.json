@@ -1,0 +1,13 @@
+{
+  "name": "@anttikissa/tsk",
+  "version": "0.1.1",
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "typescript": "^7.0.2"
+  }
+}
