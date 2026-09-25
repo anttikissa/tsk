@@ -2,5 +2,8 @@
 	title: 'Packed package installation smoke test',
 	description: 'Test a locally packed @anttikissa/tsk installed with npm and Bun outside the checkout. Run the installed tsk launcher against a disposable Git repository without touching the real home or global prefix or requiring registry credentials.',
 	status: 'done',
+	notes: [
+		'Isolate installs so the real global tsk is untouched: HOME, npm_config_prefix, and npm_config_cache for npm; BUN_INSTALL, BUN_INSTALL_GLOBAL_DIR, BUN_INSTALL_BIN, and BUN_INSTALL_CACHE_DIR for Bun.'
+	],
 	needs: ['tc', '5p', 'ks', '77']
 }
