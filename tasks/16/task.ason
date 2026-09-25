@@ -1,0 +1,6 @@
+{
+	title: 'Show task artifacts',
+	description: 'tsk show <id> lists the files in the task directory other than task.ason as artifacts, including files in nested directories. Report paths relative to the task directory in a stable order.',
+	status: 'planned',
+	needs: ['5p']
+}
