@@ -1,6 +1,6 @@
 {
 	title: 'Discoverable help for all Tsk features',
-	description: 'tsk help, tsk --help, tsk -h, and no-argument help advertise all supported commands and task/project features, including manually edited notes, once, keep, and task artifacts, with enough guidance to use them. tsk <command> --help gives command-specific usage, options, and examples without running the command or requiring a Tsk project. On a rebuild, fold this into command help (77).',
+	description: 'Top-level help (tsk, tsk help, tsk --help, tsk -h) advertises all commands and features, including notes, and points to tsk --detailed-help. That option explains the full task and project structure, every supported field, artifacts, and the rebuild workflow with concise examples. tsk <command> --help gives command-specific usage, options, and examples. Help does not run commands or require a Tsk project. On a rebuild, fold this into command help (77).',
 	status: 'planned',
 	needs: ['77']
 }
