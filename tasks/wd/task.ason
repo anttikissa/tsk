@@ -1,6 +1,6 @@
 {
 	title: 'Fold follow-up tasks into rebuild targets',
-	description: 'Support an optional foldInto list of task IDs, separate from needs. In the current build a follow-up remains independently trackable; on a rebuild, show its requirements alongside each target rather than offering it as standalone ready work, and satisfy it when all targets are done. Validate target references and dependency cycles; support the field in add, show, and reset.',
+	description: 'Support an optional foldInto list of task IDs, separate from needs. A follow-up remains independently trackable in the current build; on a rebuild, show its requirements with each target instead of offering it as standalone work, and satisfy it when all targets are done. Targets may also be needs (normally they are), but foldInto alone does not add dependencies. Reject missing, self, one-off, or downstream targets; support the field in add, show, and reset.',
 	status: 'planned',
 	needs: ['5', '5p', 'pf']
 }
