@@ -1,0 +1,6 @@
+{
+	title: 'Detailed help for each command',
+	description: 'tsk <command> --help prints command-specific usage, options, and concrete examples for every subcommand. It succeeds without performing the command or requiring a Tsk project; keep the existing concise top-level help. On a rebuild, fold this behavior into command help (77).',
+	status: 'planned',
+	needs: ['77']
+}
