@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { makeRepo, tsk } from './helpers.ts'
+import { makeRepo, tempDir, tsk } from './helpers.ts'
 
 const COMMANDS = ['init', 'add', 'ls', 'ready', 'show', 'done', 'reset', 'version', 'help']
 
@@ -16,6 +16,40 @@ test('help lists exactly the commands the CLI accepts', () => {
 	const listed = [...tsk(root, 'help').out.matchAll(/^  (\w+) +\S/gm)].map((m) => m[1]!)
 	expect(listed.sort()).toEqual([...COMMANDS].sort())
 	for (const command of listed) expect(tsk(root, command, '--bogus').err).not.toContain('unknown command')
+})
+
+test('top-level help advertises all features and detailed help describes every field', () => {
+	const root = makeRepo()
+	const summary = tsk(root, '--help')
+	for (const feature of ['--detailed-help', 'notes', 'once', 'keep', 'foldInto', 'artifacts']) expect(summary.out).toContain(feature)
+	const detailed = tsk(root, '--detailed-help')
+	expect(detailed.code).toBe(0)
+	for (const field of ['title', 'description', 'status', 'needs', 'once', 'notes', 'foldInto', 'format', 'version', 'keep']) {
+		expect(detailed.out).toMatch(new RegExp(`^  ${field} +`, 'm'))
+	}
+	expect(detailed.out).toContain('tasks/<id>/task.ason')
+	expect(detailed.out).toContain('Example task.ason:')
+	expect(detailed.out).toContain('tsk reset')
+})
+
+test('every command has usage and an example in --help, without running or requiring a project', () => {
+	const outside = tempDir()
+	for (const command of COMMANDS) {
+		const help = tsk(outside, command, '--help')
+		expect(help.code).toBe(0)
+		expect(help.out).toContain(`Usage: tsk ${command}`)
+		expect(help.out).toContain('Example:')
+		expect(help.out).toContain('Options:')
+		expect(help.err).toBe('')
+	}
+	expect(tsk(outside, '--detailed-help').code).toBe(0)
+	expect(tsk(outside, 'done', 'r', '--help').code).toBe(0)
+})
+
+test('add --help does not create a task', () => {
+	const root = makeRepo()
+	expect(tsk(root, 'add', '--title', 'Untouched', '--help').code).toBe(0)
+	expect(tsk(root, 'ls').out).toBe('[]\n')
 })
 
 test('unknown commands point to help', () => {

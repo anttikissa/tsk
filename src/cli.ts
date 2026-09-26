@@ -11,19 +11,74 @@ const VERSION: string = JSON.parse(readFileSync(new URL('../package.json', impor
 
 const USAGE = `tsk ${VERSION}
 
-Usage: tsk <command>
+Usage: tsk <command> [options]
 
 Commands:
   init    Create tasks/ at the nearest Git root
   add     Add a task: --title <text> --description <text>
-          [--status planned|done] [--needs <id>]...
+          [--status planned|done] [--needs <id>]... [--fold-into <id>]...
   ls      List all tasks (ID, title, status, needs)
   ready   List planned tasks whose dependencies are done
   show    Show one task, its links and artifacts: <id>
   done    Mark a task done: <id>
   reset   Set done tasks back to planned, except once: true tasks
   version Print the installed Tsk version
-  help    Show this usage guide`
+  help    Show this usage guide
+
+Task records: title, description, status, needs; optional once, notes, foldInto.
+Project: tasks/README.md, project.ason (optional keep), task artifact files.
+Edit notes and once in task.ason; foldInto guides agents on rebuilds.
+Run tsk <command> --help for command usage and examples.
+Run tsk --detailed-help for the full task format and rebuild guide.`
+
+const DETAILED_HELP = `${USAGE}
+
+Project layout:
+  tasks/project.ason  { format: 'tsk', version: 1 } (optional keep list)
+  tasks/README.md     Shared instructions for agents implementing tasks
+  tasks/<id>/task.ason  Task definition (lowercase Crockford base32 ID)
+  tasks/<id>/*        Optional artifacts: specifications, tests, images, etc.
+  Project discovery starts at the nearest Git root; init creates tasks/ there.
+
+Task fields in task.ason (ASON object):
+  title        Required non-empty string: short task name
+  description  Required non-empty string: intended behavior and constraints
+  status       Required 'planned' or 'done'; in-progress work stays uncommitted
+  needs        Required list of task IDs; prerequisites must be done first
+  once         Optional boolean; once: true keeps a done task done on reset
+  notes        Optional list of strings recording observations from a build
+  foldInto     Optional list of IDs of rebuild targets; advisory to agents,
+               not a dependency or an automatic status/ready rule
+
+Example task.ason:
+  { title: 'Add search', description: 'Search tasks by title.',
+    status: 'planned', needs: [], notes: ['Check Unicode matching.'] }
+
+Project marker fields:
+  format       Required 'tsk'
+  version      Required 1
+  keep         Optional list of files to retain during a rebuild; agents use it
+
+Workflow: use tsk add to create tasks, tsk ready to select work, tsk show
+for details and artifacts, and tsk done after implementing and committing.
+Edit task.ason to add notes or once; tsk add --fold-into <id> records
+rewrite guidance. On a rebuild, agents incorporate a folded task's
+requirements into each target, then mark it done without separate work.
+Run tsk reset to return done tasks to planned, except once: true tasks;
+reset changes statuses, not artifacts or other files. Respect project keep
+entries when rebuilding. See tsk <command> --help for command examples.`
+
+const COMMAND_HELP: Record<string, string> = {
+  init: `Usage: tsk init\nCreate tasks/ and a project marker at the nearest Git root.\nOptions: --help\nExample: tsk init`,
+  add: `Usage: tsk add --title <text> --description <text> [--status planned|done] [--needs <id>]... [--fold-into <id>]...\nCreate a task. Repeat --needs and --fold-into for multiple IDs; foldInto is advisory rewrite guidance, not a dependency.\nOptions: --title, --description, --status, --needs, --fold-into, --help\nExample: tsk add --title 'Write tests' --description 'Cover search' --needs r --fold-into r`,
+  ls: `Usage: tsk ls\nList task IDs, titles, statuses and dependencies in ASON.\nOptions: --help\nExample: tsk ls`,
+  ready: `Usage: tsk ready\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --help\nExample: tsk ready`,
+  show: `Usage: tsk show <id>\nShow a task's fields, dependencies, dependents and artifact paths.\nOptions: --help\nExample: tsk show r`,
+  done: `Usage: tsk done <id>\nMark a task done when all its prerequisites are done.\nOptions: --help\nExample: tsk done r`,
+  reset: `Usage: tsk reset\nSet done tasks back to planned, except completed once: true tasks. Other task fields and artifacts remain unchanged.\nOptions: --help\nExample: tsk reset`,
+  version: `Usage: tsk version\nPrint the installed version (also tsk --version).\nOptions: --help\nExample: tsk version`,
+  help: `Usage: tsk help\nShow the top-level feature and command summary (also tsk, tsk --help, or tsk -h). Use tsk --detailed-help for the full format.\nOptions: --help\nExample: tsk help`,
+}
 
 type Command = (args: string[], cwd: string) => void | Promise<void>
 
@@ -93,7 +148,7 @@ const commands: Record<string, Command> = {
 	show(args, cwd) {
 		const project = loadProject(cwd)
 		const task = getTask(project, oneId('show', args))
-		const { id, title, description, status, once, notes } = task
+		const { id, title, description, status, once, notes, foldInto } = task
 		print({
 			id,
 			title,
@@ -105,6 +160,7 @@ const commands: Record<string, Command> = {
 				const { id, title, status } = project.tasks.get(need)!
 				return { id, title, status }
 			}),
+			...(foldInto !== undefined && { foldInto }),
 			neededBy: sortedTasks(project.tasks).filter((other) => other.needs.includes(id)).map((other) => other.id),
 			artifacts: artifactFiles(join(project.tasksDir, id)),
 		})
@@ -144,7 +200,16 @@ export async function main(args: string[], cwd = process.cwd()): Promise<number>
 	const name = given === undefined ? 'help' : (aliases[given] ?? given)
 	const command = Object.hasOwn(commands, name) ? commands[name] : undefined
 	try {
+		if (given === '--detailed-help') {
+			noArgs('--detailed-help', rest)
+			console.log(DETAILED_HELP)
+			return 0
+		}
 		if (!command) throw new TskError(`unknown command: ${name}; run tsk help for usage`)
+		if (given !== undefined && !Object.hasOwn(aliases, given) && rest.some((arg) => arg === '--help' || arg === '-h')) {
+			console.log(COMMAND_HELP[name])
+			return 0
+		}
 		await command(rest, cwd)
 		return 0
 	} catch (error) {
