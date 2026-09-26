@@ -1,6 +1,6 @@
 {
-	title: 'Detailed help for each command',
-	description: 'tsk <command> --help prints command-specific usage, options, and concrete examples for every subcommand. It succeeds without performing the command or requiring a Tsk project; keep the existing concise top-level help. On a rebuild, fold this behavior into command help (77).',
+	title: 'Discoverable help for all Tsk features',
+	description: 'tsk help, tsk --help, tsk -h, and no-argument help advertise all supported commands and task/project features, including manually edited notes, once, keep, and task artifacts, with enough guidance to use them. tsk <command> --help gives command-specific usage, options, and examples without running the command or requiring a Tsk project. On a rebuild, fold this into command help (77).',
 	status: 'planned',
 	needs: ['77']
 }
