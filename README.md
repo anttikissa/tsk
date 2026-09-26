@@ -26,7 +26,10 @@ while planned tasks remain:
 - a list of dependencies, such as `['r']`;
 - optionally, `once: true` for one-off work, such as an initial publication. A rebuild keeps completed one-off tasks done instead of repeating them;
 - optionally, `notes` for observations about what happened during a rewrite or while modifying a completed task;
+- optionally, `foldInto: ['r']` to direct a rewrite agent to incorporate this task's requirements into earlier targets instead of implementing it separately on a rebuild;
 - optionally, artifact files (e.g. screenshots, tests, or detailed specifications) alongside `task.ason`.
+
+`foldInto` is advisory: it does not add dependencies or change ready, done, or reset behavior. Targets must exist and cannot be the task itself, a one-off task, or a downstream dependent. Add `needs` separately when the task requires a target to be finished first.
 
 Task IDs use lowercase Crockford base32. Early IDs are short, like `r` or `9`, and grow longer as the task list grows.
 
@@ -41,7 +44,7 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | Command | What it does |
 | --- | --- |
 | `tsk init` | Create `tasks/` and its project marker at the Git root. |
-| `tsk add --title <text> --description <text> [--needs <id>]...` | Add a planned task; repeat `--needs` for multiple dependencies. Optionally pass `--status done`. |
+| `tsk add --title <text> --description <text> [--needs <id>]... [--fold-into <id>]...` | Add a planned task; repeat `--needs` or `--fold-into` for multiple IDs. Optionally pass `--status done`. |
 | `tsk ls` | List every task's ID, title, status, and dependencies. |
 | `tsk ready` | List planned tasks whose dependencies are all done. |
 | `tsk show <id>` | Show a task with its direct dependencies, dependents, and artifact paths. |
@@ -49,8 +52,9 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | `tsk reset` | Set done tasks back to planned for a rebuild, except `once: true` tasks. |
 | `tsk version` (or `tsk --version`) | Print the installed package version. |
 | `tsk help` (or `tsk --help`, `tsk -h`) | Show the current command summary and version. |
+| `tsk --detailed-help` | Show the task format and rebuild workflow in detail. |
 
-Task listings and `tsk add` print ASON. For example, `tsk add --title 'Write tests' --description 'Cover the parser' --needs r --needs e` creates a task that depends on both `r` and `e`. Repeat `--needs` once per dependency.
+Use `tsk <command> --help` for a command's options and examples. Task listings and `tsk add` print ASON. For example, `tsk add --title 'Write tests' --description 'Cover the parser' --needs r --needs e` creates a task that depends on both `r` and `e`. Repeat `--needs` once per dependency.
 
 ## Installing
 

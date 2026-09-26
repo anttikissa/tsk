@@ -2,7 +2,7 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { formatAson, loadProject, orderRecord, TskError, type Status, type TaskRecord } from './project.ts'
+import { checkFoldTargets, formatAson, loadProject, orderRecord, TskError, type Status, type TaskRecord } from './project.ts'
 
 export const ALPHABET = '0123456789abcdefghjkmnpqrstvwxyz'
 const ATTEMPTS_PER_LENGTH = 16
@@ -41,26 +41,29 @@ function parseOptions(args: string[]) {
 	let description: string | undefined
 	let status: Status = 'planned'
 	const needs: string[] = []
+	const foldInto: string[] = []
 	for (let i = 0; i < args.length; i++) {
 		const flag = args[i]!
 		const value = args[++i]
-		if (!['--title', '--description', '--status', '--needs'].includes(flag)) throw new TskError(`add: unknown option ${flag}`)
+		if (!['--title', '--description', '--status', '--needs', '--fold-into'].includes(flag)) throw new TskError(`add: unknown option ${flag}`)
 		if (value === undefined) throw new TskError(`add: ${flag} needs a value`)
 		if (flag === '--title') title = value
 		else if (flag === '--description') description = value
 		else if (flag === '--needs') needs.push(value)
+		else if (flag === '--fold-into') foldInto.push(value)
 		else if (value === 'planned' || value === 'done') status = value
 		else throw new TskError(`add: --status must be planned or done`)
 	}
 	if (!title?.trim()) throw new TskError('add: --title is required')
 	if (!description?.trim()) throw new TskError('add: --description is required')
-	return { title, description, status, needs: [...new Set(needs)] }
+	return { title, description, status, needs: [...new Set(needs)], ...(foldInto.length && { foldInto: [...new Set(foldInto)] }) }
 }
 
 export function add(args: string[], cwd: string) {
 	const options = parseOptions(args)
 	const project = loadProject(cwd)
 	for (const need of options.needs) if (!project.tasks.has(need)) throw new TskError(`add: unknown dependency ${need}`)
+	checkFoldTargets(project.tasks, options)
 	const record: TaskRecord = orderRecord(options)
 	const id = claimId(project.tasksDir, project.tasks.keys())
 	writeFileSync(join(project.tasksDir, id, 'task.ason'), formatAson(record))

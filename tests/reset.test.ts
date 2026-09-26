@@ -17,6 +17,14 @@ test('reset plans done tasks except once tasks, keeps comments, and is idempoten
 	expect(tsk(root, 'reset')).toMatchObject({ code: 0, out: '[]\n' })
 })
 
+test('reset preserves foldInto on completed follow-ups', () => {
+	const root = makeRepo({ a: task('done'), b: task('done', ['a'], "foldInto: ['a'],") })
+	const path = join(root, 'tasks', 'b', 'task.ason')
+	expect(tsk(root, 'reset').code).toBe(0)
+	expect(readFileSync(path, 'utf8')).toContain("foldInto: ['a']")
+	expect(tsk(root, 'reset').out).toBe('[]\n')
+})
+
 test('reset takes no arguments', () => {
 	expect(tsk(makeRepo(), 'reset', 'a')).toMatchObject({ code: 1, err: 'tsk: reset takes no arguments\n' })
 })

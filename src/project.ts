@@ -16,6 +16,7 @@ export type TaskRecord = {
 	once?: boolean
 	notes?: string[]
 	needs: string[]
+	foldInto?: string[]
 }
 
 export type Task = TaskRecord & { id: string }
@@ -28,7 +29,7 @@ export type Project = {
 
 export const ID_RE = /^[0-9a-hjkmnp-tv-z]+$/
 const STATUSES: Status[] = ['planned', 'done']
-const FIELDS = ['title', 'description', 'status', 'once', 'notes', 'needs']
+const FIELDS = ['title', 'description', 'status', 'once', 'notes', 'needs', 'foldInto']
 
 /** The nearest directory at or above `cwd` containing `.git`. */
 export function findGitRoot(cwd: string): string {
@@ -92,7 +93,7 @@ export function validateRecord(value: AsonValue, where: string): TaskRecord {
 	if (typeof value !== 'object' || value === null || Array.isArray(value)) bad('expected an object')
 	const record = value as Record<string, AsonValue>
 	for (const key of Object.keys(record)) if (!FIELDS.includes(key)) bad(`unknown field ${key}`)
-	const { title, description, status, once, notes, needs } = record
+	const { title, description, status, once, notes, needs, foldInto } = record
 	if (typeof title !== 'string' || !title.trim()) bad('title must be a non-empty string')
 	if (typeof description !== 'string' || !description.trim()) bad('description must be a non-empty string')
 	if (!STATUSES.includes(status as Status)) bad(`status must be 'planned' or 'done', got ${stringify(status)}`)
@@ -100,16 +101,18 @@ export function validateRecord(value: AsonValue, where: string): TaskRecord {
 	const isStrings = (v: AsonValue) => Array.isArray(v) && v.every((s) => typeof s === 'string')
 	if (notes !== undefined && !isStrings(notes)) bad('notes must be a list of strings')
 	if (!isStrings(needs)) bad('needs must be a list of task IDs')
+	if (foldInto !== undefined && !isStrings(foldInto)) bad('foldInto must be a list of task IDs')
 	const result: TaskRecord = { title: title as string, description: description as string, status: status as Status, needs: [...(needs as string[])] }
 	if (once !== undefined) result.once = once as boolean
 	if (notes !== undefined) result.notes = [...(notes as string[])]
+	if (foldInto !== undefined) result.foldInto = [...(foldInto as string[])]
 	return orderRecord(result)
 }
 
 /** Fields in the canonical task.ason order. */
 export function orderRecord(task: TaskRecord): TaskRecord {
-	const { title, description, status, once, notes, needs } = task
-	return { title, description, status, ...(once !== undefined && { once }), ...(notes !== undefined && { notes }), needs }
+	const { title, description, status, once, notes, needs, foldInto } = task
+	return { title, description, status, ...(once !== undefined && { once }), ...(notes !== undefined && { notes }), needs, ...(foldInto !== undefined && { foldInto }) }
 }
 
 function checkDependencies(tasks: Map<string, Task>): void {
@@ -130,6 +133,20 @@ function checkDependencies(tasks: Map<string, Task>): void {
 		state.set(id, 'visited')
 	}
 	for (const id of tasks.keys()) visit(id, [])
+	for (const task of tasks.values()) checkFoldTargets(tasks, task)
+}
+
+/** Validate advisory fold targets without changing the dependency graph. */
+export function checkFoldTargets(tasks: Map<string, Task>, task: TaskRecord & { id?: string }): void {
+	for (const targetId of task.foldInto ?? []) {
+		if (targetId === task.id) throw new TskError(`task ${task.id} cannot fold into itself`)
+		const target = tasks.get(targetId)
+		if (!target) throw new TskError(`task ${task.id ?? 'being added'} folds into unknown task ${targetId}`)
+		if (target.once) throw new TskError(`task ${task.id ?? 'being added'} cannot fold into one-off task ${targetId}`)
+		if (task.id && prerequisites(tasks, targetId).some((need) => need.id === task.id)) {
+			throw new TskError(`task ${task.id} cannot fold into downstream task ${targetId}`)
+		}
+	}
 }
 
 /** Every task reachable through `needs`, excluding the task itself. */

@@ -23,6 +23,29 @@ test('add accepts --status done and repeated --needs', () => {
 	expect(out).toContain("needs: ['a', 'b']")
 })
 
+test('add accepts repeatable fold targets independently of needs', () => {
+	const root = makeRepo({ a: task('done'), b: task('done') })
+	const { code, out } = tsk(root, 'add', '--title', 'T', '--description', 'D', '--needs', 'a', '--fold-into', 'a', '--fold-into', 'b', '--fold-into', 'a')
+	expect(code).toBe(0)
+	expect(out).toContain("needs: ['a']")
+	expect(out).toContain("foldInto: ['a', 'b']")
+	const id = out.match(/id: '([0-9a-z]+)'/)![1]!
+	expect(readFileSync(join(root, 'tasks', id, 'task.ason'), 'utf8')).toContain("foldInto: ['a', 'b']")
+})
+
+test.each([
+	[['--fold-into', 'x'], 'folds into unknown task x'],
+	[['--fold-into', 'b'], 'cannot fold into one-off task b'],
+	[['--fold-into'], '--fold-into needs a value'],
+])('add rejects invalid fold targets before creating a directory %#', (flags, message) => {
+	const root = makeRepo({ b: task('done', [], 'once: true,') })
+	const before = readdirSync(join(root, 'tasks'))
+	const { code, err } = tsk(root, 'add', '--title', 'T', '--description', 'D', ...flags)
+	expect(code).toBe(1)
+	expect(err).toContain(message)
+	expect(readdirSync(join(root, 'tasks'))).toEqual(before)
+})
+
 test.each([
 	[['--description', 'D'], '--title is required'],
 	[['--title', 'T'], '--description is required'],

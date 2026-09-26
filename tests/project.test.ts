@@ -43,6 +43,22 @@ test.each([
 	expect(() => loadProject(makeRepo(tasks))).toThrow(message)
 })
 
+test('loads advisory fold targets without adding dependencies', () => {
+	const { tasks } = loadProject(makeRepo({ a: task('planned'), b: task('planned', [], "foldInto: ['a'],") }))
+	expect(tasks.get('b')?.foldInto).toEqual(['a'])
+	expect(prerequisites(tasks, 'b')).toEqual([])
+})
+
+test.each([
+	[{ a: task('planned', [], 'foldInto: 1,') }, /foldInto must be a list of task IDs/],
+	[{ a: task('planned', [], "foldInto: ['x'],") }, /a folds into unknown task x/],
+	[{ a: task('planned', [], "foldInto: ['a'],") }, /a cannot fold into itself/],
+	[{ a: task('planned', [], "foldInto: ['b'],"), b: task('done', [], 'once: true,') }, /a cannot fold into one-off task b/],
+	[{ a: task('planned', [], "foldInto: ['c'],"), b: task('planned', ['a']), c: task('planned', ['b']) }, /a cannot fold into downstream task c/],
+])('rejects invalid fold targets %#', (tasks, message) => {
+	expect(() => loadProject(makeRepo(tasks))).toThrow(message)
+})
+
 test('finds unfinished prerequisites through completed tasks', () => {
 	const { tasks } = loadProject(makeRepo({ a: task('planned'), b: task('done', ['a'], 'once: true,'), c: task('planned', ['b']) }))
 	expect(prerequisites(tasks, 'c').map((t) => t.id)).toEqual(['a', 'b'])
