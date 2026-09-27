@@ -27,11 +27,13 @@ while planned tasks remain:
 - optionally, `once: true` for one-off work, such as an initial publication. A rebuild keeps completed one-off tasks done instead of repeating them;
 - optionally, `notes` for observations about what happened during a rewrite or while modifying a completed task;
 - optionally, `foldInto: ['r']` to direct a rewrite agent to incorporate this task's requirements into earlier targets instead of implementing it separately on a rebuild;
-- optionally, artifact files (e.g. screenshots, tests, or detailed specifications) alongside `task.ason`.
+- optionally, artifact files (e.g. screenshots, tests, or detailed specifications) alongside [`task.ason`](#whats-ason).
 
 `foldInto` is advisory: it does not add dependencies or change ready, done, or reset behavior. Targets must exist and cannot be the task itself, a one-off task, or a downstream dependent. Add `needs` separately when the task requires a target to be finished first.
 
 Task IDs use lowercase Crockford base32. Early IDs are short, like `r` or `9`, and grow longer as the task list grows.
+
+Tasks use the [`ASON`](#whats-ason) file format.
 
 A `tasks/README.md` provides shared guidance for implementing all tasks.
 
@@ -54,7 +56,7 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | `tsk help` (or `tsk --help`, `tsk -h`) | Show the current command summary and version. |
 | `tsk --detailed-help` | Show the task format and rebuild workflow in detail. |
 
-Use `tsk <command> --help` for a command's options and examples. Task listings and `tsk add` print ASON. For example, `tsk add --title 'Write tests' --description 'Cover the parser' --needs r --needs e` creates a task that depends on both `r` and `e`. Repeat `--needs` once per dependency.
+Use `tsk <command> --help` for a command's options and examples. For example, `tsk add --title 'Write tests' --description 'Cover the parser' --needs r --needs e` creates a task that depends on both `r` and `e`. Repeat `--needs` once per dependency.
 
 ## Installing
 
@@ -78,3 +80,17 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## What's ASON?
+
+ASON (A Saner Object Notation) is like JSON, but easier to read and edit: it allows unquoted keys, single-quoted strings, comments, and trailing commas. Tsk uses it for task files and command output. Implementation is [one .ts file](src/ason.ts).
+
+```ason
+{
+  title: 'Write tests',
+  description: 'Cover the parser',
+  status: 'planned',
+  // Tasks to finish first
+  needs: ['r'],
+}
+```
