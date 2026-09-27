@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 — 2026-09-27
+
+- Added `foldInto` guidance for rebuilds: a follow-up task can name earlier tasks whose requirements should incorporate it on the next rebuild. It is advisory and does not change dependencies or task readiness.
+- `tsk add` accepts repeatable `--fold-into <id>` options; task loading validates fold targets, and `tsk show` displays them.
+- Help now covers all commands and task features. Use `tsk --detailed-help` for the project format and rebuild workflow, or `tsk <command> --help` for command-specific usage and examples.
+
 ## 0.2.1 — 2026-09-25
 
 - Added `tsk reset`, which sets done tasks back to planned for a rebuild, except `once: true` tasks.
