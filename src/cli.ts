@@ -100,9 +100,9 @@ function human(value: unknown): string {
 	}
 	if (value && typeof value === 'object') {
 		return Object.entries(value).map(([key, item]) => {
-			if (Array.isArray(item)) return `${key}: ${item.length ? item.map((entry) => typeof entry === 'object' ? `\n${human(entry).replaceAll('\n', '\n  ')}` : String(entry)).join(', ') : '(none)'}`
+			if (Array.isArray(item)) return item.length ? `${key}:\n${item.map((entry) => `  - ${human(entry).replaceAll('\n', '\n    ')}`).join('\n')}` : `${key}: (none)`
 			if (item && typeof item === 'object') return `${key}:\n${human(item).replaceAll('\n', '\n  ')}`
-			return `${key}: ${String(item)}`
+			return `${key}: ${String(item).replaceAll('\n', '\n  ')}`
 		}).join('\n')
 	}
 	return String(value)

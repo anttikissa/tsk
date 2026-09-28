@@ -65,6 +65,14 @@ test('add and init support all output formats', () => {
 	expect(human.out).not.toStartWith('[')
 })
 
+test('human output keeps separate and multiline notes readable', () => {
+	const root = makeRepo({ a: task('planned', [], "notes: ['first'],") })
+	expect(tsk(root, 'add-note', 'a', 'second, item\ncontinued').code).toBe(0)
+	const shown = tskHuman(root, 'show', 'a')
+	expect(shown.code).toBe(0)
+	expect(shown.out).toContain('notes:\n  - first\n  - second, item\n    continued')
+})
+
 test('format errors are clear and written to stderr with no stdout', () => {
 	const root = makeRepo()
 	for (const [args, message] of [
