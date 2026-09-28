@@ -104,9 +104,14 @@ directly with `./run <command>`.
 
 ## Storage format
 
-Tsk stores tasks under `tasks/` in a project's Git repository. Each task has a
-short, lowercase Crockford base32 ID and its own directory. The task data uses
-[ASON](#whats-ason), a readable notation for structured values.
+Tsk stores tasks under `tasks/` at a project's Git root. `tasks/project.ason`
+identifies a Tsk project and can list paths to keep during a rebuild; a freeform
+`tasks/README.md` provides shared context. Each task lives in a flat directory
+named for its short, lowercase Crockford base32 ID, with a `task.ason` record
+and optional supporting files. Task records require a `spec` describing intended
+behavior and constraints; `once: true` identifies one-off work and `notes` hold
+observations. The task data uses [ASON](#whats-ason), a readable notation for
+structured values.
 
 ## Release history
 
