@@ -20,6 +20,7 @@ Commands:
   ls      List all tasks (ID, title, status, needs)
   ready   List planned tasks whose dependencies are done
   show    Show one task, its links and artifacts: <id>
+  add-note Append a note to a task: <id> <text>
   done    Mark a task done: <id>
   reset   Set done tasks back to planned, except once: true tasks
   version Print the installed Tsk version
@@ -27,7 +28,7 @@ Commands:
 
 Task records: title, description, status, needs; optional once, notes, foldInto.
 Project: tasks/README.md, project.ason (optional keep), task artifact files.
-Edit notes and once in task.ason; foldInto guides agents on rebuilds.
+Use tsk add-note to append notes; edit once in task.ason.
 Run tsk <command> --help for command usage and examples.
 Run tsk --detailed-help for the full task format and rebuild guide.`
 
@@ -61,9 +62,10 @@ Project marker fields:
 
 Workflow: use tsk add to create tasks, tsk ready to select work, tsk show
 for details and artifacts, and tsk done after implementing and committing.
-Edit task.ason to add notes or once; tsk add --fold-into <id> records
-rewrite guidance. On a rebuild, agents incorporate a folded task's
-requirements into each target, then mark it done without separate work.
+Use tsk add-note <id> <text> to append a note; edit once in task.ason;
+tsk add --fold-into <id> records rewrite guidance. On a rebuild, agents
+incorporate a folded task's requirements into each target, then mark it done
+without separate work.
 Run tsk reset to return done tasks to planned, except once: true tasks;
 reset changes statuses, not artifacts or other files. Respect project keep
 entries when rebuilding. See tsk <command> --help for command examples.`
@@ -74,6 +76,7 @@ const COMMAND_HELP: Record<string, string> = {
   ls: `Usage: tsk ls\nList task IDs, titles, statuses and dependencies in ASON.\nOptions: --help\nExample: tsk ls`,
   ready: `Usage: tsk ready\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --help\nExample: tsk ready`,
   show: `Usage: tsk show <id>\nShow a task's fields, dependencies, dependents and artifact paths.\nOptions: --help\nExample: tsk show r`,
+  'add-note': `Usage: tsk add-note <id> <text>\nAppend a non-empty note to a planned or done task, creating notes if absent.\nOptions: --help\nExample: tsk add-note r 'Check error messages'`,
   done: `Usage: tsk done <id>\nMark a task done when all its prerequisites are done.\nOptions: --help\nExample: tsk done r`,
   reset: `Usage: tsk reset\nSet done tasks back to planned, except completed once: true tasks. Other task fields and artifacts remain unchanged.\nOptions: --help\nExample: tsk reset`,
   version: `Usage: tsk version\nPrint the installed version (also tsk --version).\nOptions: --help\nExample: tsk version`,
@@ -164,6 +167,19 @@ const commands: Record<string, Command> = {
 			neededBy: sortedTasks(project.tasks).filter((other) => other.needs.includes(id)).map((other) => other.id),
 			artifacts: artifactFiles(join(project.tasksDir, id)),
 		})
+	},
+
+	'add-note'(args, cwd) {
+		if (args.length !== 2 || !args[1]?.trim()) throw new TskError('usage: tsk add-note <id> <text> (text must be non-empty)')
+		const project = loadProject(cwd)
+		const task = getTask(project, args[0])
+		const path = join(project.tasksDir, task.id, 'task.ason')
+		const record = parse(readFileSync(path, 'utf8'), { comments: true }) as AsonObject
+		if (Array.isArray(record.notes)) record.notes.push(args[1])
+		else record.notes = [args[1]]
+		writeFileSync(path, formatAson(record))
+		const { id, ...rest } = { ...task, notes: [...(task.notes ?? []), args[1]] }
+		print({ id, ...orderRecord(rest) })
 	},
 
 	done(args, cwd) {

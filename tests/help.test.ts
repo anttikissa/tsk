@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { makeRepo, tempDir, tsk } from './helpers.ts'
 
-const COMMANDS = ['init', 'add', 'ls', 'ready', 'show', 'done', 'reset', 'version', 'help']
+const COMMANDS = ['init', 'add', 'add-note', 'ls', 'ready', 'show', 'done', 'reset', 'version', 'help']
 
 test('help, --help, -h, and no arguments print the same usage guide', () => {
 	const root = makeRepo()
@@ -13,7 +13,7 @@ test('help, --help, -h, and no arguments print the same usage guide', () => {
 
 test('help lists exactly the commands the CLI accepts', () => {
 	const root = makeRepo()
-	const listed = [...tsk(root, 'help').out.matchAll(/^  (\w+) +\S/gm)].map((m) => m[1]!)
+	const listed = [...tsk(root, 'help').out.matchAll(/^  ([a-z][a-z-]*) +\S/gm)].map((m) => m[1]!)
 	expect(listed.sort()).toEqual([...COMMANDS].sort())
 	for (const command of listed) expect(tsk(root, command, '--bogus').err).not.toContain('unknown command')
 })
