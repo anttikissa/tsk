@@ -1,0 +1,7 @@
+{
+	title: 'Browse and filter task summaries',
+	spec: 'tsk ls defaults to all tasks sorted by ID, showing ID, title, status, needs, note count, and spec length in characters without dumping full specs or notes. --status planned|done filters results; --spec and --notes reveal those fields on request; --folded-by reveals tasks that fold into each result. tsk show always lists the incoming foldInto links as foldedBy alongside neededBy. These options work with human and structured output.',
+	status: 'planned',
+	needs: ['ec', 'wd'],
+	foldInto: ['fk', '5p']
+}

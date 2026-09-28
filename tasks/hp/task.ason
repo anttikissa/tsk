@@ -1,0 +1,7 @@
+{
+	title: 'Delete tasks safely through Tsk',
+	spec: 'tsk del <id> removes an unreferenced task through the CLI. Refuse deletion if another task needs it or folds into it. Refuse to delete artifact files without an explicit --force, and never delete unrelated paths; explain refusals without changing the project.',
+	status: 'planned',
+	needs: ['wd', 'r'],
+	foldInto: ['r', 'wd']
+}
