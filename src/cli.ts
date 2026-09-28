@@ -1,11 +1,12 @@
 // The single Tsk CLI implementation.
 
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { dirname, join } from 'node:path'
 import { add } from './add.ts'
 import { init } from './init.ts'
 import { parse, stringify, type AsonObject } from './ason.ts'
-import { formatAson, getTask, loadProject, orderRecord, TskError, unfinishedPrerequisites, type Task } from './project.ts'
+import { checkDependencies, formatAson, getTask, loadProject, orderRecord, TskError, unfinishedPrerequisites, validateRecord, type Task } from './project.ts'
 
 const VERSION: string = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 
@@ -20,6 +21,8 @@ Commands:
   ls      List all tasks (ID, title, status, needs)
   ready   List planned tasks whose dependencies are done
   show    Show one task, its links and artifacts: <id>
+  edit    Edit a task: <id> [--title <text>] [--spec <text>] [--status planned|done]
+          [--once true|false] [--needs <id>]... [--fold-into <id>]...
   add-note Append a note to a task: <id> <text>
   done    Mark a task done: <id>
   reset   Set done tasks back to planned, except once: true tasks
@@ -28,7 +31,7 @@ Commands:
 
 Task records: title, spec, status, needs; optional once, notes, foldInto.
 Project: tasks/README.md, project.ason (optional keep), task artifact files.
-Use tsk add-note to append notes; edit once in task.ason.
+Use tsk edit <id> to update task fields with flags or VISUAL/EDITOR; use tsk add-note for notes.
 Run tsk <command> --help for command usage and examples.
 Run tsk --detailed-help for the full task format and rebuild guide.`
 
@@ -62,7 +65,7 @@ Project marker fields:
 
 Workflow: use tsk add to create tasks, tsk ready to select work, tsk show
 for details and artifacts, and tsk done after implementing and committing.
-Use tsk add-note <id> <text> to append a note; edit once in task.ason;
+Use tsk edit <id> with field flags or VISUAL/EDITOR; editor mode also supports notes.
 tsk add --fold-into <id> records rewrite guidance. On a rebuild, agents
 incorporate a folded task's requirements into each target, then mark it done
 without separate work.
@@ -76,6 +79,7 @@ const COMMAND_HELP: Record<string, string> = {
   ls: `Usage: tsk ls\nList task IDs, titles, statuses and dependencies in ASON.\nOptions: --help\nExample: tsk ls`,
   ready: `Usage: tsk ready\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --help\nExample: tsk ready`,
   show: `Usage: tsk show <id>\nShow a task's fields, dependencies, dependents and artifact paths.\nOptions: --help\nExample: tsk show r`,
+	edit: `Usage: tsk edit <id> [--title <text>] [--spec <text>] [--status planned|done] [--once true|false] [--needs <id>]... [--fold-into <id>]...\nWith no update flags, open VISUAL, EDITOR, or vi. Repeat list flags to replace lists.\nOptions: --title, --spec, --status, --once, --needs, --fold-into, --help\nExample: tsk edit r --title 'New title' --needs a`,
   'add-note': `Usage: tsk add-note <id> <text>\nAppend a non-empty note to a planned or done task, creating notes if absent.\nOptions: --help\nExample: tsk add-note r 'Check error messages'`,
   done: `Usage: tsk done <id>\nMark a task done when all its prerequisites are done.\nOptions: --help\nExample: tsk done r`,
   reset: `Usage: tsk reset\nSet done tasks back to planned, except completed once: true tasks. Other task fields and artifacts remain unchanged.\nOptions: --help\nExample: tsk reset`,
@@ -116,6 +120,68 @@ function artifactFiles(dir: string): string[] {
 	return paths.sort()
 }
 
+function editTask(args: string[], cwd: string): void {
+	if (!args.length) throw new TskError('usage: tsk edit <id> [options]')
+	const project = loadProject(cwd)
+	const task = getTask(project, args[0])
+	const path = join(project.tasksDir, task.id, 'task.ason')
+	const updates = new Map<string, string[]>()
+	for (let i = 1; i < args.length; i++) {
+		const flag = args[i]!
+		if (!['--title', '--spec', '--status', '--once', '--needs', '--fold-into'].includes(flag)) throw new TskError(`unknown edit option: ${flag}`)
+		const value = args[++i]
+		if (value === undefined || value.startsWith('--')) throw new TskError(`missing value for ${flag}`)
+		updates.set(flag, [...(updates.get(flag) ?? []), value])
+	}
+	let candidate: unknown
+	if (updates.size) {
+		const next = { ...task }
+		for (const [flag, values] of updates) {
+			if (flag !== '--needs' && flag !== '--fold-into' && values.length !== 1) throw new TskError(`${flag} may be given once`)
+			const value = values[0]!
+			switch (flag) {
+				case '--title': next.title = value; break
+				case '--spec': next.spec = value; break
+				case '--status': next.status = value as Task['status']; break
+				case '--once':
+					if (value !== 'true' && value !== 'false') throw new TskError('--once must be true or false')
+					next.once = value === 'true'
+					break
+				case '--needs': next.needs = values; break
+				case '--fold-into': next.foldInto = values; break
+			}
+		}
+		candidate = orderRecord(next)
+	} else {
+		const dir = mkdtempSync(join(dirname(path), '.tsk-edit-'))
+		const draft = join(dir, 'task.ason')
+		try {
+			writeFileSync(draft, formatAson(orderRecord(task)))
+			const escaped = draft.replaceAll("'", "'\\''")
+			const editor = process.env.VISUAL || process.env.EDITOR || 'vi'
+			const result = spawnSync(`${editor} '${escaped}'`, { shell: true, stdio: 'inherit' })
+			if (result.error) throw new TskError(`could not run editor: ${result.error.message}`)
+			if (result.status !== 0) throw new TskError(`editor exited with status ${result.status ?? result.signal}`)
+			try { candidate = parse(readFileSync(draft, 'utf8')) }
+			catch (error) { throw new TskError(`invalid task edited in ${draft}: ${(error as Error).message}`) }
+		} finally { rmSync(dir, { recursive: true, force: true }) }
+	}
+	const record = validateRecord(candidate as AsonObject, path)
+	const updated: Task = { id: task.id, ...record }
+	const tasks = new Map(project.tasks)
+	tasks.set(task.id, updated)
+	checkDependencies(tasks)
+	if (updated.status === 'done' && task.status !== 'done') {
+		const unfinished = unfinishedPrerequisites(tasks, task.id)
+		if (unfinished.length) throw new TskError(`task ${task.id} has unfinished prerequisites: ${unfinished.map((t) => t.id).join(', ')}`)
+	}
+	const temp = `${path}.tmp-${process.pid}`
+	try { writeFileSync(temp, formatAson(record)); renameSync(temp, path) }
+	finally { rmSync(temp, { force: true }) }
+	const { id, ...rest } = updated
+	print({ id, ...orderRecord(rest) })
+}
+
 const commands: Record<string, Command> = {
 	help() {
 		console.log(USAGE)
@@ -128,6 +194,10 @@ const commands: Record<string, Command> = {
 
 	add(args, cwd) {
 		print(add(args, cwd))
+	},
+
+	edit(args, cwd) {
+		editTask(args, cwd)
 	},
 
 	init(args, cwd) {

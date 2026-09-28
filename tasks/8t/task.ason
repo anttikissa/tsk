@@ -1,7 +1,7 @@
 {
 	title: 'Edit tasks through Tsk',
-	spec: 'tsk edit <id> opens the task in VISUAL or EDITOR (falling back to vi); with update flags it edits without opening an editor. Flags update title, spec, status, once, needs, and foldInto while preserving unspecified fields; editor mode allows editing notes too. Validate the entire resulting task graph before replacing the record, and keep the original intact on editor failure or invalid input. Marking done obeys the same prerequisite checks as tsk done.',
-	status: 'planned',
+	spec: 'tsk edit <id> opens the task in VISUAL or EDITOR (falling back to vi); with update flags it edits without opening an editor. Flags update title, spec, status, once, needs, and foldInto while preserving unspecified fields; repeated needs and foldInto flags replace their lists. Editor mode allows editing notes too. Validate the entire resulting task graph before replacing the record, and keep the original intact on editor failure or invalid input. Marking done obeys the same prerequisite checks as tsk done.',
+	status: 'done',
 	needs: ['wd', '5', 'ks'],
 	foldInto: ['5', 'r', 'ks']
 }

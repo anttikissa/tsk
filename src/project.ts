@@ -115,7 +115,7 @@ export function orderRecord(task: TaskRecord): TaskRecord {
 	return { title, spec, status, ...(once !== undefined && { once }), ...(notes !== undefined && { notes }), needs, ...(foldInto !== undefined && { foldInto }) }
 }
 
-function checkDependencies(tasks: Map<string, Task>): void {
+export function checkDependencies(tasks: Map<string, Task>): void {
 	for (const task of tasks.values()) {
 		for (const need of task.needs) {
 			if (!tasks.has(need)) throw new TskError(`task ${task.id} needs unknown task ${need}`)

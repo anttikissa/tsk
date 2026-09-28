@@ -8,7 +8,7 @@ A task has a title, `spec` for intended behavior and constraints, `status: 'plan
 
 Optional `foldInto: ['a']` is guidance for rewrite agents: in the current build the follow-up is ordinary work, while on a rebuild its requirements are incorporated into each named target instead of implemented separately. Targets may also appear in `needs`, but `foldInto` does not add dependencies or affect ready, done, or reset. Targets must exist, cannot be the task itself, a one-off task, or downstream of the task.
 
-Specs state what a fresh build must produce; notes record what happened in this build. Correct or remove notes that become wrong, useless, or misleading. Delete tasks for behavior no longer wanted rather than leaving them planned. Use `tsk add` to create tasks, `tsk add-note` to append observations, and `tsk done` to complete tasks; edit other task fields manually until Tsk supports updating them.
+Use `tsk add` to create tasks, `tsk add-note` to append observations, `tsk done` to complete tasks, and `tsk edit` to update task fields through flags or an editor.
 
 ASON reads input into values and writes normalized output; it does not preserve source formatting. The parser accepts trailing commas and comments, but the writer omits trailing commas and may change whitespace or quotes. Some comments can be retained when parsing with comment preservation enabled; do not rely on byte-for-byte round trips.
 
