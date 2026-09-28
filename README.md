@@ -102,6 +102,14 @@ For development from a clone, use Bun or Node.js ≥22.18. Run `./install` to
 install dependencies and link `tsk` into `~/.local/bin`, or invoke the checkout
 directly with `./run <command>`.
 
+## Performance checks
+
+Run `bun run bench` from the checkout to generate reproducible 1,000- and
+10,000-task graphs and measure warm lookup, ID generation, listing, and ready
+queries. Startup and full project loading are reported separately. Timings are
+machine-dependent; the benchmark reports them without failing on a fixed
+threshold.
+
 ## Storage format
 
 Tsk stores tasks under `tasks/` at a project's Git root. `tasks/project.ason`

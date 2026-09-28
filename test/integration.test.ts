@@ -46,11 +46,12 @@ test('done and ready check transitive prerequisites through completed one-off ta
     c: task('C', 'planned', "['b']"),
   })
   try {
-    expect(fx.run('ready', '--format=json').stdout).toContain('"id": "a"')
-    expect(fx.run('ready', '--format=json').stdout).not.toContain('"id": "c"')
+    const ready = () => JSON.parse(fx.run('ready', '--format=json').stdout) as { id: string }[]
+    expect(ready().map(({ id }) => id)).toContain('a')
+    expect(ready().map(({ id }) => id)).not.toContain('c')
     expect(fx.run('done', 'c').code).not.toBe(0)
     expect(fx.run('done', 'a').code).toBe(0)
-    expect(fx.run('ready', '--format=json').stdout).toContain('"id": "c"')
+    expect(ready().map(({ id }) => id)).toContain('c')
     expect(fx.run('done', 'c').code).toBe(0)
     const reset = fx.run('reset', '--format=json')
     expect(reset.code).toBe(0)
