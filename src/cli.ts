@@ -1,12 +1,12 @@
 // The single Tsk CLI implementation.
 
-import { mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { lstatSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 import { add } from './add.ts'
 import { init } from './init.ts'
 import { parse, stringify, type AsonObject } from './ason.ts'
-import { checkDependencies, formatAson, getTask, loadProject, orderRecord, TskError, unfinishedPrerequisites, validateRecord, type Task } from './project.ts'
+import { checkDependencies, formatAson, getTask, ID_RE, loadProject, orderRecord, TskError, unfinishedPrerequisites, validateRecord, type Task } from './project.ts'
 
 const VERSION: string = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 
@@ -18,6 +18,7 @@ Commands:
   init    Create tasks/ at the nearest Git root
   add     Add a task: --title <text> --spec <text>
           [--status planned|done] [--needs <id>]... [--fold-into <id>]...
+  del     Delete an unreferenced task: <id> [--force]
   ls      List all tasks (ID, title, status, needs)
   ready   List planned tasks whose dependencies are done
   show    Show one task, its links and artifacts: <id>
@@ -85,6 +86,7 @@ const COMMAND_HELP: Record<string, string> = {
   reset: `Usage: tsk reset\nSet done tasks back to planned, except completed once: true tasks. Other task fields and artifacts remain unchanged.\nOptions: --help\nExample: tsk reset`,
   version: `Usage: tsk version\nPrint the installed version (also tsk --version).\nOptions: --help\nExample: tsk version`,
   help: `Usage: tsk help\nShow the top-level feature and command summary (also tsk, tsk --help, or tsk -h). Use tsk --detailed-help for the full format.\nOptions: --help\nExample: tsk help`,
+	del: `Usage: tsk del <id> [--force]\nDelete a task with no incoming needs or foldInto references. Refuse artifacts unless --force is explicit.\nOptions: --force, --help\nExample: tsk del r --force`,
 }
 
 type Command = (args: string[], cwd: string) => void | Promise<void>
@@ -104,6 +106,52 @@ function noArgs(name: string, args: string[]): void {
 function oneId(name: string, args: string[]): string {
 	if (args.length !== 1) throw new TskError(`usage: tsk ${name} <id>`)
 	return args[0]!
+}
+
+function deleteTask(args: string[], cwd: string): void {
+	if (args.length < 1 || args.length > 2 || (args.length === 2 && args[1] !== '--force')) throw new TskError('usage: tsk del <id> [--force]')
+	const id = args[0]!
+	if (!ID_RE.test(id)) throw new TskError(`invalid task ID: ${id}`)
+	const force = args[1] === '--force'
+	const project = loadProject(cwd)
+	const task = getTask(project, id)
+	const dependents = sortedTasks(project.tasks).filter((other) => other.id !== id && other.needs.includes(id))
+	if (dependents.length) throw new TskError(`cannot delete task ${id}; needed by: ${dependents.map((other) => other.id).join(', ')}`)
+	const folded = sortedTasks(project.tasks).filter((other) => other.id !== id && other.foldInto?.includes(id))
+	if (folded.length) throw new TskError(`cannot delete task ${id}; folded into by: ${folded.map((other) => other.id).join(', ')}`)
+	const tasksRoot = realpathSync(project.tasksDir)
+	const taskPath = join(tasksRoot, id)
+	const rel = relative(tasksRoot, taskPath)
+	if (!rel || rel.startsWith(`..${sep}`) || rel === '..' || resolve(tasksRoot, rel) !== taskPath) throw new TskError(`refusing to delete path outside tasks/: ${taskPath}`)
+	const rootStat = lstatSync(project.tasksDir)
+	const taskStat = lstatSync(taskPath)
+	if (!rootStat.isDirectory() || rootStat.isSymbolicLink() || !taskStat.isDirectory() || taskStat.isSymbolicLink()) throw new TskError(`refusing to delete non-directory or symlink task path: ${taskPath}`)
+	if (realpathSync(taskPath) !== taskPath || dirname(realpathSync(taskPath)) !== tasksRoot) throw new TskError(`refusing to delete task path outside tasks/: ${taskPath}`)
+	const artifacts: string[] = []
+	function scan(directory: string, relPath = ''): void {
+		for (const entry of readdirSync(directory, { withFileTypes: true })) {
+			const path = join(directory, entry.name)
+			const child = relPath ? `${relPath}/${entry.name}` : entry.name
+			if (entry.isSymbolicLink()) throw new TskError(`refusing to delete task ${id}: symlink found at ${child}`)
+			if (entry.isDirectory()) scan(path, child)
+			else if (!entry.isFile()) throw new TskError(`refusing to delete task ${id}: unsupported file at ${child}`)
+			else if (child !== 'task.ason') artifacts.push(child)
+		}
+	}
+	try { scan(taskPath) } catch (error) { if (error instanceof TskError) throw error; throw new TskError(`cannot inspect task ${id}: ${(error as Error).message}`) }
+	if (artifacts.length && !force) throw new TskError(`task ${id} has artifact files; pass --force to delete them: ${artifacts.join(', ')}`)
+	const trash = join(tasksRoot, `.tsk-delete-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+	try {
+		renameSync(taskPath, trash)
+		try { rmSync(trash, { recursive: true }) }
+		catch (error) {
+			try { if (lstatSync(trash).isDirectory()) renameSync(trash, taskPath) } catch { /* retain the original failure */ }
+			throw error
+		}
+	} catch (error) {
+		throw new TskError(`could not delete task ${id}: ${(error as Error).message}`)
+	}
+	print({ id, deleted: true })
 }
 
 function artifactFiles(dir: string): string[] {
@@ -194,6 +242,10 @@ const commands: Record<string, Command> = {
 
 	add(args, cwd) {
 		print(add(args, cwd))
+	},
+
+	del(args, cwd) {
+		deleteTask(args, cwd)
 	},
 
 	edit(args, cwd) {

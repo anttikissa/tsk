@@ -47,6 +47,7 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | --- | --- |
 | `tsk init` | Create `tasks/` and its project marker at the Git root. |
 | `tsk add --title <text> --spec <text> [--needs <id>]... [--fold-into <id>]...` | Add a planned task; repeat `--needs` or `--fold-into` for multiple IDs. Optionally pass `--status done`. |
+| `tsk del <id> [--force]` | Delete an unreferenced task; requires `--force` when artifacts are present. |
 | `tsk add-note <id> <text>` | Append an observation to a planned or done task's notes. |
 | `tsk ls` | List every task's ID, title, status, and dependencies. |
 | `tsk ready` | List planned tasks whose dependencies are all done. |
