@@ -4,10 +4,11 @@ A minimal task manager for rebuilding software.
 
 A task is a small, durable description of work:
 
-```json
+```ason
 {
-  "title": "Mark a task done",
-  "spec": "tsk done <id> marks a task done when its dependencies are done"
+    title: 'Mark a task done',
+    spec: 'tsk done <id> marks a task done when its dependencies are done',
+    status: 'planned'
 }
 ```
 
@@ -71,22 +72,6 @@ does not create a dependency; use `--needs` when work must wait for a target.
 | `tsk help` (`tsk --help`, `tsk -h`) | Show the command summary and version. |
 | `tsk --detailed-help` | Show the task format and rebuild workflow in detail. |
 
-Use `tsk <command> --help` for command options. Commands that return task data
-accept `--format json|ason` or `--format=json|ason` for structured output.
-For example, `tsk show <id> --format json` includes notes, links, and file
-paths. Errors go to stderr so structured stdout remains clean.
-Options with values accept either a space or `=` before the value.
-
-Human `tsk ls` uses one row per task with status, ID, title, optional needs/note/file
-counts, a short spec excerpt, and spec size; its footer counts planned and done
-tasks. `tsk show <id>` prints the full spec and nonempty details. `tsk reset`
-reports how many tasks changed and how many one-off tasks stayed done.
-
-`tsk tree` starts with tasks that need nothing and draws branches toward tasks
-that depend on them. If a task needs multiple parents, it is expanded under
-the first and linked under the others as "also needs …; shown above". A
-`foldInto →` line is an annotation, not a dependency branch.
-
 ## Installing
 
 With Bun or Node.js:
@@ -104,20 +89,8 @@ directly with `./run <command>`.
 ## Storage format
 
 Tsk stores tasks under `tasks/` in a project's Git repository. Each task has a
-short, lowercase Crockford base32 ID and its own directory; dependencies use
-those IDs, not task order. The task data uses [ASON](#whats-ason), a readable
-notation for structured values. Tsk normalizes ASON when writing it, so source
-formatting is not preserved byte-for-byte.
-
-## Scale benchmark
-
-Run the optional 1,000- and 10,000-task graph benchmark with
-`bun run benchmark:scale`. It creates isolated temporary Git/task fixtures,
-uses a temporary `HOME`, and removes them on exit. Results report median and p95
-for warm lookup, ID claiming, list/ready queries, project loading, and cold CLI
-startup/list/ready commands. Warm lookup and ID claim should remain below
-50 ms; total timings are informational and are not asserted because they vary
-by machine.
+short, lowercase Crockford base32 ID and its own directory. The task data uses
+[ASON](#whats-ason), a readable notation for structured values.
 
 ## Release history
 
