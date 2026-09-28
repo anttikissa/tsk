@@ -1,7 +1,7 @@
 {
 	title: 'Lead README with tasks and the CLI',
 	spec: 'Present tasks with a small object showing title and spec, and explain the tsk command workflow as the main interface rather than directing people to edit task files. De-emphasize ASON as an implementation detail, keeping storage-format information discoverable without advertising it as the product.',
-	status: 'planned',
+	status: 'done',
 	needs: ['ec', '2g'],
 	foldInto: ['d']
 }

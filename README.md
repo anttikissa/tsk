@@ -2,66 +2,83 @@
 
 A minimal task manager for rebuilding software.
 
-## Motivation
+A task is a small, durable description of work:
 
-In the LLM era, software is easy to build and extend, but it's just as easy to produce unmaintainable code. Agents also make it easier to rebuild software from scratch: you can start fresh with better guidance, a better harness, or a more capable model.
-
-`tsk` offers a minimal way to do this: split the functionality into tasks linked by dependencies, then turn those tasks into working software by following this loop:
-
-```
-while planned tasks remain:
-    pick a planned task whose dependencies are all done
-    implement the task
-    mark it as done
-    commit
+```text
+title: Mark a task done
+spec: tsk done <id> marks a task done when its dependencies are done
 ```
 
-## The anatomy of a task
+The title names the work; the spec says what a fresh build must produce and
+records important constraints. Tasks form a dependency graph in the project's
+Git repository, providing a recipe for rebuilding the software.
 
-`tsk` is deliberately minimal. A task lives in `tasks/<id>/` and has:
+## Work with tasks
 
-- a title, such as `Mark a task done`;
-- a `spec` for what must be true, such as `tsk done <id> marks a task done when its dependencies are done`;
-- a status (`planned` or `done`);
-- a list of dependencies, such as `['r']`;
-- optionally, `once: true` for one-off work, such as an initial publication. A rebuild keeps completed one-off tasks done instead of repeating them;
-- optionally, `notes` for observations about what happened during a rewrite or while modifying a completed task;
-- optionally, `foldInto: ['r']` to direct a rewrite agent to incorporate this task's requirements into earlier targets instead of implementing it separately on a rebuild;
-- optionally, artifact files (e.g. screenshots, tests, or detailed specifications) alongside [`task.ason`](#whats-ason).
+Run Tsk from anywhere inside a Git repository. It discovers the `tasks/`
+directory at the Git root. Start a task collection, add work, and inspect what
+is ready:
 
-`foldInto` is advisory: it does not add dependencies or change ready, done, or reset behavior. Targets must exist and cannot be the task itself, a one-off task, or a downstream dependent. Add `needs` separately when the task requires a target to be finished first.
+```sh
+tsk init
+tsk add --title 'Cover the parser' --spec 'Tests exercise valid and invalid input'
+tsk ready
+tsk show <id>
+```
 
-Task IDs use lowercase Crockford base32. Early IDs are short, like `r` or `9`, and grow longer as the task list grows.
+Tsk assigns each added task an ID and prints it. Add prerequisites with
+`--needs <id>` (repeat the option for multiple prerequisites). A planned task
+is ready when its dependencies are done:
 
-Tasks use the [`ASON`](#whats-ason) file format.
+```sh
+tsk add --title 'Document the parser' \
+  --spec 'README explains parser behavior' --needs <id>
+tsk ready
+```
 
-A `tasks/README.md` provides shared guidance for implementing all tasks.
+Implement a ready task, then mark it done and commit the implementation and
+updated task record together:
 
-Tasks are either done (implemented in this codebase) or planned (not yet implemented). In-progress work stays uncommitted, so it doesn't need a separate status.
+```sh
+tsk done <id>
+git add .
+git commit -m 'Document parser behavior'
+```
 
-## Using `tsk`
+Repeat with the next ready task. `tsk` is the interface for creating, browsing,
+and updating tasks; use commands rather than editing task files directly.
 
-Run these commands from anywhere inside a Git repository. Tsk discovers the project's `tasks/` directory at the Git root.
+Task specs describe intended behavior for a fresh build. Optional `notes` record
+observations from this build or during later changes; keep them accurate and
+use `tsk add-note <id> <text>` to append one. Optional `once: true` marks
+one-off work, which stays done during a rebuild. Optional `foldInto` links
+guide rewrite agents to incorporate a task's requirements into named targets
+instead of implementing it separately on a rebuild. `foldInto` is advisory and
+does not create a dependency; use `--needs` when work must wait for a target.
 
-| Command | What it does |
+## Commands
+
+| Command | Purpose |
 | --- | --- |
 | `tsk init` | Create `tasks/` and its project marker at the Git root. |
-| `tsk add --title <text> --spec <text> [--needs <id>]... [--fold-into <id>]...` | Add a planned task; repeat `--needs` or `--fold-into` for multiple IDs. Optionally pass `--status done`. |
-| `tsk del <id> [--force]` | Delete an unreferenced task; requires `--force` when artifacts are present. |
-| `tsk add-note <id> <text>` | Append an observation to a planned or done task's notes. |
-| `tsk ls [--status planned|done] [--spec] [--notes] [--folded-by]` | List sorted task summaries with counts and lengths; reveal full specs, notes, or incoming fold links on request. |
+| `tsk add --title <text> --spec <text> [--needs <id>]... [--fold-into <id>]...` | Add a planned task. Repeat `--needs` or `--fold-into` for multiple IDs; optionally pass `--status done`. |
 | `tsk ready` | List planned tasks whose dependencies are all done. |
 | `tsk show <id>` | Show a task with its direct dependencies, dependents, incoming fold links, and artifact paths. |
-| `tsk tree [<id>]` | Visualize the dependency DAG from prerequisite roots; an ID limits the view to that task and downstream dependents. Shared branches are shown once, and `foldInto` links are annotated separately. |
-| `tsk done <id>` | Mark a task done, provided all its dependencies are done. |
+| `tsk done <id>` | Mark a task done when all dependencies are done. |
+| `tsk ls [--status planned|done] [--spec] [--notes] [--folded-by]` | List task summaries; opt in to full specs, notes, or incoming fold links. |
+| `tsk tree [<id>]` | Visualize the dependency graph; an ID limits the view to that task and its downstream dependents. |
+| `tsk edit <id> [options]` | Update task fields with flags or an editor. |
+| `tsk add-note <id> <text>` | Append an observation to a task's notes. |
+| `tsk del <id> [--force]` | Delete an unreferenced task; `--force` is required when artifacts are present. |
 | `tsk reset` | Set done tasks back to planned for a rebuild, except `once: true` tasks. |
-| `tsk version` (or `tsk --version`) | Print the installed package version. |
-| `tsk help` (or `tsk --help`, `tsk -h`) | Show the current command summary and version. |
+| `tsk version` (`tsk --version`) | Print the installed package version. |
+| `tsk help` (`tsk --help`, `tsk -h`) | Show the command summary and version. |
 | `tsk --detailed-help` | Show the task format and rebuild workflow in detail. |
 
-Task commands print concise human-readable output by default. Commands that return task data accept `--format json` or `--format ason` to print the same structured information in JSON or ASON. For example, `tsk show r --format json` includes the task's notes, links, and artifact paths. Format errors are reported on stderr, leaving structured stdout clean.
-
-Use `tsk <command> --help` for a command's options and examples. For example, `tsk add --title 'Write tests' --spec 'Cover the parser' --needs r --needs e` creates a task that depends on both `r` and `e`. Repeat `--needs` once per dependency.
+Use `tsk <command> --help` for command options. Commands that return task data
+accept `--format json` or `--format ason` for structured output; for example,
+`tsk show <id> --format json` includes notes, links, and artifact paths. Errors
+go to stderr so structured stdout remains clean.
 
 ## Installing
 
@@ -73,14 +90,27 @@ bun install -g @anttikissa/tsk
 npm install -g @anttikissa/tsk
 ```
 
-For development from a clone (Bun or Node.js ≥22.18):
+For development from a clone, use Bun or Node.js ≥22.18. Run `./install` to
+install dependencies and link `tsk` into `~/.local/bin`, or invoke the checkout
+directly with `./run <command>`.
 
-- `./install` installs dependencies and links `tsk` into `~/.local/bin`
-- or invoke the checkout directly via `./run <command>`
+## Storage format
+
+Tsk stores tasks under `tasks/` in a project's Git repository. Each task has a
+short, lowercase Crockford base32 ID and its own directory; dependencies use
+those IDs, not task order. The task data uses [ASON](#whats-ason), a readable
+notation for structured values. Tsk normalizes ASON when writing it, so source
+formatting is not preserved byte-for-byte.
 
 ## Scale benchmark
 
-Run the optional 1,000- and 10,000-task graph benchmark with `bun run benchmark:scale`. It creates isolated temporary Git/task fixtures, uses a temporary `HOME`, and removes them on exit. Results report median and p95 for warm lookup, ID claiming, list/ready queries, project loading, and cold CLI startup/list/ready commands. Warm lookup and ID claim should remain below 50 ms; total timings are informational and are not asserted because they vary by machine.
+Run the optional 1,000- and 10,000-task graph benchmark with
+`bun run benchmark:scale`. It creates isolated temporary Git/task fixtures,
+uses a temporary `HOME`, and removes them on exit. Results report median and p95
+for warm lookup, ID claiming, list/ready queries, project loading, and cold CLI
+startup/list/ready commands. Warm lookup and ID claim should remain below
+50 ms; total timings are informational and are not asserted because they vary
+by machine.
 
 ## Release history
 
@@ -92,14 +122,7 @@ MIT. See [LICENSE](LICENSE).
 
 ## What's ASON?
 
-ASON (A Saner Object Notation) is like JSON, but easier to read and edit: it allows unquoted keys, single-quoted strings, comments, and trailing commas. Tsk uses it for task files and command output. Implementation is [one .ts file](src/ason.ts).
-
-```ason
-{
-  title: 'Write tests',
-  spec: 'Cover the parser',
-  status: 'planned',
-  // Tasks to finish first
-  needs: ['r'],
-}
-```
+ASON (A Saner Object Notation) is like JSON, but easier to read and edit: it
+allows unquoted keys, single-quoted strings, comments, and trailing commas. Tsk
+uses it for task files and command output. Its implementation is [one .ts
+file](src/ason.ts).
