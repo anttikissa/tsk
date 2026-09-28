@@ -1,12 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-09-28
 
-- Replaced `description` with `spec` throughout task records and CLI output.
+- Replaced `description` with required `spec` in task records and CLI output. Existing task records must be updated to use `spec`.
 - Added `tsk edit`, `tsk add-note`, and guarded `tsk del` commands.
 - Added `tsk ls` filters and opt-in full specs, notes, and incoming `foldInto` links.
 - Added `tsk tree` to visualize prerequisites and dependents.
-- Human-readable output is now the default; use `--format ason` or `--format json` for structured data. Renamed `artifacts` to `files`.
+- Human-readable output is now the default; use `--format ason` or `--format json` for structured data. Renamed `artifacts` to `files` in output.
 - Value-taking options accept both `--option value` and `--option=value` forms.
 - Added an optional 1,000- and 10,000-task graph benchmark for task lookup, ID generation, and listing.
 

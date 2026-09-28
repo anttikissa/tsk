@@ -5,10 +5,12 @@ A minimal task manager for rebuilding software.
 A task is a small, durable description of work:
 
 ```ason
+// Simplified from tasks/ks/task.ason, before implementation:
 {
     title: 'Mark a task done',
     spec: 'tsk done <id> marks a task done when its dependencies are done',
-    status: 'planned'
+    status: 'planned', // 'planned' | 'done'
+    needs: ['r']       // r: "Project discovery and task loading" must be done first
 }
 ```
 
