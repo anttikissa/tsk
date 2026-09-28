@@ -32,12 +32,12 @@ function record(value: AsonValue, location: string): AsonObject {
 }
 
 function strings(value: unknown, location: string): string[] {
-	if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) throw new Error(`${location}: expected a list of strings`)
+	if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) throw new Error(`${location} must be a list of ${location.endsWith('foldInto') ? 'task IDs' : 'strings'}`)
 	return value
 }
 
 function validId(id: string): void {
-	if (!ID.test(id)) throw new Error(`Invalid task ID: ${id}`)
+	if (!ID.test(id)) throw new Error(`Invalid task ID: ${id} is not a lowercase Crockford ID`)
 }
 
 export function validateTask(task: Task): void {
@@ -71,7 +71,7 @@ export function validateTasks(tasks: Map<string, Task>): void {
 		validateTask(task)
 		if (task.id !== id) throw new Error(`Task ${id}: ID does not match map key ${task.id}`)
 		for (const need of task.needs) {
-			if (!tasks.has(need)) throw new Error(`Task ${id}: missing dependency ${need}`)
+			if (!tasks.has(need)) throw new Error(`Task ${id} needs unknown task ${need} (missing dependency ${need})`)
 			if (need === id) throw new Error(`Task ${id}: cannot depend on itself`)
 		}
 	}
@@ -93,7 +93,7 @@ export function validateTasks(tasks: Map<string, Task>): void {
 				continue
 			}
 			const need = needs[top.next++]!
-			if (color.get(need) === 1) throw new Error(`Dependency cycle: ${[...stack.map((entry) => entry.id), need].join(' -> ')}`)
+			if (color.get(need) === 1) throw new Error(`Dependency cycle: ${[...stack.map((entry) => entry.id), need].join(' -> ')} (cycle: ${[...stack.map((entry) => entry.id), need].join(' -> ')})`)
 			if (!color.has(need)) {
 				color.set(need, 1)
 				stack.push({ id: need, next: 0 })
@@ -105,16 +105,16 @@ export function validateTasks(tasks: Map<string, Task>): void {
 	for (const [id, task] of tasks) {
 		for (const target of task.foldInto ?? []) {
 			const into = tasks.get(target)
-			if (!into) throw new Error(`Task ${id}: missing foldInto target ${target}`)
-			if (target === id) throw new Error(`Task ${id}: cannot fold into itself`)
-			if (into.once) throw new Error(`Task ${id}: cannot fold into one-off task ${target}`)
+			if (!into) throw new Error(`${id} folds into unknown task ${target} (missing foldInto target ${target})`)
+			if (target === id) throw new Error(`${id} cannot fold into itself`)
+			if (into.once) throw new Error(`${id} cannot fold into one-off task ${target}`)
 			// A dependent always follows its prerequisites in topological order.
 			if (index.get(target)! <= index.get(id)!) continue
 			const visited = new Set<string>()
 			const pending = [target]
 			while (pending.length) {
 				const next = pending.pop()!
-				if (next === id) throw new Error(`Task ${id}: foldInto target ${target} is downstream`)
+				if (next === id) throw new Error(`${id} cannot fold into downstream task ${target}`)
 				if (visited.has(next)) continue
 				visited.add(next)
 				for (const need of tasks.get(next)!.needs) if (index.get(need)! >= index.get(id)!) pending.push(need)
@@ -128,7 +128,7 @@ export function gitRoot(cwd: string = process.cwd()): string {
 	while (true) {
 		if (existsSync(join(current, '.git'))) return current
 		const parent = dirname(current)
-		if (parent === current) throw new Error(`No Git repository found from ${cwd}`)
+		if (parent === current) throw new Error(`not inside a Git repository (No Git repository found from ${cwd})`)
 		current = parent
 	}
 }
@@ -140,11 +140,11 @@ function realDirectory(path: string): boolean {
 export function loadProject(cwd: string = process.cwd()): Project {
 	const root = gitRoot(cwd)
 	const tasksDir = join(root, 'tasks')
-	if (!existsSync(tasksDir) || !realDirectory(tasksDir)) throw new Error(`${tasksDir}: not a Tsk task directory`)
+	if (!existsSync(tasksDir) || !realDirectory(tasksDir)) throw new Error(`${tasksDir}: not a Tsk task directory; run tsk init`)
 	const markerPath = join(tasksDir, 'project.ason')
-	if (!existsSync(markerPath) || !lstatSync(markerPath).isFile()) throw new Error(`${tasksDir}: missing Tsk project.ason marker`)
+	if (!existsSync(markerPath) || !lstatSync(markerPath).isFile()) throw new Error(`${tasksDir}: missing Tsk project.ason marker; not a Tsk task directory`)
 	const rawMarker = record(parse(readFileSync(markerPath, 'utf8')), markerPath)
-	if (rawMarker.format !== 'tsk' || rawMarker.version !== 1) throw new Error(`${markerPath}: unsupported Tsk format or version`)
+	if (rawMarker.format !== 'tsk' || rawMarker.version !== 1) throw new Error(`${markerPath}: unsupported Tsk format or version; does not identify the Tsk format`)
 	for (const field of Object.keys(rawMarker)) if (!['format', 'version', 'keep'].includes(field)) throw new Error(`${markerPath}: unknown field ${field}`)
 	const marker: Project['marker'] = { format: 'tsk', version: 1 }
 	if (rawMarker.keep !== undefined) {
@@ -157,12 +157,15 @@ export function loadProject(cwd: string = process.cwd()): Project {
 	const tasks = new Map<string, Task>()
 	for (const entry of readdirSync(tasksDir, { withFileTypes: true })) {
 		if (!entry.isDirectory()) continue
-		if (!ID.test(entry.name)) continue // README and other non-task artifacts are not records
+		if (!ID.test(entry.name)) {
+			if (existsSync(join(tasksDir, entry.name, 'task.ason'))) validId(entry.name)
+			continue // Ignore non-task artifact directories.
+		}
 		const path = join(tasksDir, entry.name, 'task.ason')
 		if (!existsSync(path) || !lstatSync(path).isFile()) throw new Error(`${path}: missing task record`)
 		let data: AsonObject
 		try { data = record(parse(readFileSync(path, 'utf8')), path) }
-		catch (error) { throw new Error(`${path}: ${error instanceof Error ? error.message : String(error)}`) }
+		catch (error) { throw new Error(`malformed ASON in ${path}: ${error instanceof Error ? error.message : String(error)}`) }
 		for (const field of Object.keys(data)) if (!FIELDS.has(field)) throw new Error(`${path}: unknown field ${field}`)
 		const task = { id: entry.name, ...data } as Task
 		try { validateTask(task) }
@@ -280,6 +283,49 @@ export function readyTasks(project: Project): Task[] {
 	}
 	if (queue.length !== project.tasks.size) throw new Error('Dependency cycle in project tasks')
 	return ready.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+}
+
+/** Prerequisites in dependency order, without duplicates or recursive stack use. */
+export function prerequisites(tasks: Map<string, Task>, id: string): Task[] {
+	const task = tasks.get(id)
+	if (!task) throw new Error(`Unknown task: ${id}`)
+	const found: Task[] = []
+	const seen = new Set<string>([id])
+	const pending = task.needs.map((need) => ({ id: need, visited: false })).reverse()
+	while (pending.length) {
+		const next = pending.pop()!
+		if (next.visited) { found.push(tasks.get(next.id)!); continue }
+		if (seen.has(next.id)) continue
+		const prerequisite = tasks.get(next.id)
+		if (!prerequisite) throw new Error(`Task ${id}: missing dependency ${next.id}`)
+		seen.add(next.id)
+		pending.push({ id: next.id, visited: true })
+		for (let i = prerequisite.needs.length - 1; i >= 0; i--) pending.push({ id: prerequisite.needs[i]!, visited: false })
+	}
+	return found
+}
+
+export function unfinishedPrerequisites(tasks: Map<string, Task>, id: string): Task[] {
+	return prerequisites(tasks, id).filter((task) => task.status !== 'done')
+}
+
+/** Refuse symlinks anywhere in a task tree before destructive deletion. */
+export function assertSafeTaskTree(project: Project, id: string): void {
+	const directory = dirname(taskPath(project, id))
+	if (!lstatSync(project.tasksDir).isDirectory()) throw new Error(`${project.tasksDir}: not a real task directory`)
+	const pending = [directory]
+	while (pending.length) {
+		const path = pending.pop()!
+		const info = lstatSync(path)
+		if (info.isSymbolicLink()) throw new Error(`symlink found in task ${id}: ${path}`)
+		if (!info.isDirectory()) throw new Error(`not a task directory: ${path}`)
+		for (const entry of readdirSync(path)) {
+			const child = join(path, entry)
+			const stat = lstatSync(child)
+			if (stat.isSymbolicLink()) throw new Error(`symlink found in task ${id}: ${child}`)
+			if (stat.isDirectory()) pending.push(child)
+		}
+	}
 }
 export function taskFiles(project: Project, id: string, refresh = false): string[] {
 	const path = taskPath(project, id)

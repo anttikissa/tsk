@@ -10,7 +10,11 @@
   "files": [
     "run",
     "dist",
-    "src",
+    "src/ason.ts",
+    "src/project.ts",
+    "src/add.ts",
+    "src/init.ts",
+    "src/cli.ts",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
@@ -18,7 +22,7 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc --project tsconfig.json",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc --project tsconfig.build.json",
     "prepack": "npm run build",
     "bench": "bun scripts/bench.ts"
   },

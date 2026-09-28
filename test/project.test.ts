@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { gitRoot, isReady, loadProject, readyTasks, saveTask, taskFiles, taskPath, validateTask, validateTasks, type Task } from '../src/project.ts'
+import { assertSafeTaskTree, gitRoot, isReady, loadProject, prerequisites, readyTasks, saveTask, taskFiles, taskPath, unfinishedPrerequisites, validateTask, validateTasks, type Task } from '../src/project.ts'
 
 const roots: string[] = []
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }) })
@@ -73,6 +73,15 @@ describe('project loading and graph validation', () => {
 		expect(isReady(project, 'c')).toBe(true)
 		expect(readyTasks(project).map((task) => task.id)).toEqual(['c'])
 	})
+	test('orders prerequisites once and preserves unfinished dependencies behind done nodes', () => {
+		const tasks = new Map<string, Task>([
+			['a', basic('a')],
+			['b', basic('b', 'done', ['a'])],
+			['c', basic('c', 'planned', ['a', 'b'])],
+		])
+		expect(prerequisites(tasks, 'c').map((task) => task.id)).toEqual(['a', 'b'])
+		expect(unfinishedPrerequisites(tasks, 'c').map((task) => task.id)).toEqual(['a'])
+	})
 })
 
 describe('safe task data updates', () => {
@@ -100,6 +109,17 @@ describe('safe task data updates', () => {
 		expect(taskFiles(loadProject(root), 'a')).toEqual(['linked', 'nested/z.txt'])
 		symlinkSync(join(root, 'tasks', 'a'), join(root, 'tasks', 'b'))
 		expect(() => saveTask(loadProject(root), basic('b'))).toThrow()
+	})
+	test('checks nested symlinks before destructive removal', () => {
+		const root = fixture()
+		put(root, 'a', "{ title: 'a', spec: 'a', status: 'planned', needs: [] }")
+		const project = loadProject(root)
+		const nested = join(root, 'tasks', 'a', 'nested')
+		mkdirSync(nested)
+		assertSafeTaskTree(project, 'a')
+		symlinkSync(root, join(nested, 'external'))
+		expect(() => assertSafeTaskTree(project, 'a')).toThrow('symlink found')
+		expect(readFileSync(taskPath(project, 'a'), 'utf8')).toContain("title: 'a'")
 	})
 	test('checks field shape before creating any files', () => {
 		const root = fixture()
