@@ -31,7 +31,7 @@ test('help and version require no project; data formats keep stdout clean', () =
     expect(fx.run('--help').code).toBe(0)
     expect(fx.run('--help').stdout).toContain('add-note')
     expect(fx.run('--detailed-help').stdout).toContain('foldInto')
-    expect(fx.run('--version').stdout.trim()).toBe('0.3.0')
+    expect(fx.run('--version').stdout.trim()).toBe('tsk 0.3.0')
     const listed = fx.run('ls', '--format=json')
     expect(listed.code).toBe(0)
     expect(listed.stderr).toBe('')
@@ -88,7 +88,8 @@ test('show lists nested artifacts but never traverses symlinks; delete guards ar
     const shown = JSON.parse(fx.run('show', 'a', '--format=json').stdout)
     expect(shown.files).toEqual(['link', 'nested/note.txt'])
     expect(fx.run('del', 'a').code).not.toBe(0)
-    expect(fx.run('del', 'a', '--force').code).toBe(0)
+    expect(fx.run('del', 'a', '--force').code).not.toBe(0)
+    expect(readFileSync(join(fx.root, 'tasks', 'a', 'task.ason'), 'utf8')).toContain("title: 'A'")
     expect(readFileSync(join(outside, 'private'), 'utf8')).toBe('outside')
   } finally { fx.close(); rmSync(outside, { recursive: true, force: true }) }
 })

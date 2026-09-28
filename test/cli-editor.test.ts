@@ -27,16 +27,16 @@ function withProject(callback: (root: string, run: (...args: string[]) => { code
 test('tree keeps fold guidance separate from dependency edges and scopes dependents', () => withProject((_root, run) => {
   const graph = JSON.parse(run('tree', 'a', '--format=json').out)
   expect(graph.nodes.map((task: { id: string }) => task.id)).toEqual(['a', 'b'])
-  expect(graph.edges).toEqual([{ from: 'a', to: 'b' }])
+  expect(graph.dependencies).toEqual([{ from: 'a', to: 'b' }])
   expect(graph.foldInto).toEqual([{ from: 'b', to: 'a' }])
   const limited = JSON.parse(run('tree', 'b', '--format=json').out)
   expect(limited.nodes.map((task: { id: string }) => task.id)).toEqual(['b'])
-  expect(run('tree').out).toContain('└─ b B')
+  expect(run('tree').out).toContain('└── b [planned] B')
 }))
 
 test('show includes empty lists and fold links, reset preserves fold guidance', () => withProject((root, run) => {
   const shown = JSON.parse(run('show', 'a', '--format=json').out)
-  expect(shown).toMatchObject({ notes: [], foldInto: [], files: [], dependents: ['b'], foldedBy: ['b'] })
+  expect(shown).toMatchObject({ files: [], neededBy: ['b'], foldedBy: ['b'], needs: [] })
   expect(run('done', 'a').code).toBe(0)
   expect(run('done', 'b').code).toBe(0)
   expect(run('reset', '--format=json').out).toContain('b')

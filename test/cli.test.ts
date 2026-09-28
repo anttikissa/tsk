@@ -39,12 +39,12 @@ test('ready reports full specs, empty results and conditional dependencies', () 
   } finally { fx.close() }
 })
 
-test('add allows done with completed prerequisites but refuses unfinished ones', () => {
+test('add accepts done status independently of prerequisite readiness', () => {
   const fx = fixture({ a: task('Alpha', 'done'), b: task('Beta') })
   try {
-    const blocked = fx.run('add', '--title=Blocked', '--spec=Waiting', '--status=done', '--needs=b')
-    expect(blocked.code).not.toBe(0)
-    expect(blocked.err).toContain('unfinished prerequisites')
+    const pending = fx.run('add', '--title=Previously done', '--spec=Waiting', '--status=done', '--needs=b', '--format=json')
+    expect(pending.code).toBe(0)
+    expect(JSON.parse(pending.out)).toMatchObject({ status: 'done', needs: ['b'] })
     const added = fx.run('add', '--title=Complete', '--spec=Worked', '--status=done', '--needs=a', '--format=json')
     expect(added.code).toBe(0)
     const record = JSON.parse(added.out)
