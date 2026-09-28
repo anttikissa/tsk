@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { parse, stringify } from './ason.ts'
-import { createTask, findGitRoot, getTask, loadProject, taskFiles, validateProject, writeTask, type Project, type Task } from './project.ts'
-import { renderView, help, version } from './views.ts'
+import { createTask, findGitRoot, getTask, isTskMarker, loadProject, prerequisites, taskFiles, validateProject, writeTask, type Project, type Task } from './project.ts'
+import { listRow, renderView, help, version } from './views.ts'
 
 type Format = 'human' | 'json' | 'ason'
 const commands = new Set(['init', 'add', 'edit', 'del', 'done', 'add-note', 'reset', 'ls', 'ready', 'show', 'tree', 'foldable', 'help', 'version'])
@@ -19,16 +19,19 @@ function output(value: unknown, format: Format, human: string): string {
 function optionValue(args: string[], index: number, name: string): [string, number] {
   const arg = args[index]!
   const value = arg.startsWith(name + '=') ? arg.slice(name.length + 1) : args[index + 1]
-  if (!value || value.startsWith('--')) fail(`Missing value for ${name}`)
+  if (!value || (value.startsWith('--') && !((name === '--spec' || name === '--title') && value.includes('=')))) fail(`${name} ${name === '--format' ? 'requires' : 'needs'} a value${name === '--format' ? ' (json or ason)' : ''}`)
   return [value, arg.includes('=') ? index : index + 1]
 }
 function formatArgs(args: string[]): { format: Format; args: string[] } {
   let format: Format = 'human'
+  let specified = false
   const rest: string[] = []
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--format' || args[i]!.startsWith('--format=')) {
+      if (specified) fail('--format may be given only once')
+      specified = true
       const [value, end] = optionValue(args, i, '--format')
-      if (value !== 'json' && value !== 'ason') fail(`Unknown format: ${value}`)
+      if (value !== 'json' && value !== 'ason') fail(`unknown format '${value}'; expected json or ason`)
       format = value
       i = end
     } else rest.push(args[i]!)
@@ -42,7 +45,7 @@ function options(args: string[], allowed: string[], boolean: string[] = []): { p
     const arg = args[i]!
     if (!arg.startsWith('--')) { positional.push(arg); continue }
     const name = arg.split('=')[0]!
-    if (!allowed.includes(name)) fail(`Unknown option: ${name}`)
+    if (!allowed.includes(name)) fail(`unknown option ${name}`)
     if (boolean.includes(name) && !arg.includes('=')) {
       if (name === '--once' && (args[i + 1] === 'true' || args[i + 1] === 'false')) values.set(name, [args[++i]!])
       else values.set(name, ['true'])
@@ -63,11 +66,11 @@ function valuesForTask(values: Map<string,string[]>, current?: Task): Omit<Task,
   const spec = first('--spec') ?? current?.spec
   const status = first('--status') ?? current?.status ?? 'planned'
   if (!title?.trim() || !spec?.trim()) fail('A nonempty --title and --spec are required')
-  if (status !== 'planned' && status !== 'done') fail('Status must be planned or done')
+  if (status !== 'planned' && status !== 'done') fail('--status must be planned or done')
   const onceValue = first('--once')
   if (onceValue !== undefined && onceValue !== 'true' && onceValue !== 'false') fail('Once must be true or false')
   const record: Omit<Task,'id'> = { title, spec, status, needs: values.get('--needs') ?? current?.needs ?? [] }
-  if (values.has('--fold-into') || current?.foldInto) record.foldInto = values.get('--fold-into') ?? current?.foldInto
+  if (values.has('--fold-into') || current?.foldInto) record.foldInto = values.has('--fold-into') ? [...new Set(values.get('--fold-into'))] : current?.foldInto
   if (onceValue !== undefined) record.once = onceValue === 'true'
   else if (current?.once !== undefined) record.once = current.once
   if (current?.notes) record.notes = current.notes
@@ -90,13 +93,15 @@ function editInEditor(project: Project, task: Task): Task {
 }
 function removeTask(project: Project, id: string, force: boolean): void {
   getTask(project, id)
-  const incoming = [...project.tasks.values()].filter(t => t.id !== id && (t.needs.includes(id) || t.foldInto?.includes(id)))
-  if (incoming.length) fail(`Task ${id} is referenced by ${incoming.map(t => t.id).join(', ')}`)
+  const neededBy = [...project.tasks.values()].filter(t => t.id !== id && t.needs.includes(id)).map(t => t.id)
+  const foldedBy = [...project.tasks.values()].filter(t => t.id !== id && t.foldInto?.includes(id)).map(t => t.id)
+  if (neededBy.length) fail(`task ${id} is needed by ${neededBy.join(', ')}`)
+  if (foldedBy.length) fail(`task ${id} is folded into by ${foldedBy.join(', ')}`)
   const dir = join(project.tasksDir, id)
   if (lstatSync(project.tasksDir).isSymbolicLink() || lstatSync(dir).isSymbolicLink() || !lstatSync(dir).isDirectory()) fail('Unsafe task directory')
   const entries = readdirSync(dir)
   if (!entries.includes('task.ason')) fail('Task record is missing')
-  if (!force && entries.some(e => e !== 'task.ason')) fail(`Task ${id} has artifacts; use --force`)
+  if (!force && entries.some(e => e !== 'task.ason')) fail(`task ${id} has files; pass --force to delete them`)
   // Refuse the entire deletion if any nested entry could escape the task directory.
   const inspect = (path: string): void => {
     const stat = lstatSync(path)
@@ -110,17 +115,29 @@ function removeTask(project: Project, id: string, force: boolean): void {
 }
 export function run(argv: string[] = process.argv.slice(2), cwd = process.cwd()): string {
   const command = argv[0]
-  if (!command || command === '--help' || command === '-h' || command === 'help') return help(command === 'help' ? argv[1] : undefined)
+  if (!command || command === '--help' || command === '-h') return help()
   if (command === '--detailed-help') return help(undefined, true)
+  if (!commands.has(command) && command !== '--version') fail(`unknown command: ${command}; run tsk help for usage`)
+  const requestedHelp = argv.slice(1).includes('--help') || argv.slice(1).includes('-h')
+  if (command === 'help') {
+    if (argv[1]?.startsWith('--') && argv[1] !== '--help') fail(`unknown help topic: ${argv[1]}`)
+    return help(argv[1] === '--help' ? 'help' : argv[1])
+  }
+  if (requestedHelp) return help(command)
   if (command === '--version' || command === 'version') return version()
-  if (!commands.has(command)) fail(`Unknown command: ${command}. Run tsk help.`)
   const {format, args} = formatArgs(argv.slice(1))
-  if (args.includes('--help') || args.includes('-h')) return help(command)
   if (command === 'init') {
     if (args.length) fail('Usage: tsk init')
     const root = findGitRoot(cwd)
     const dir = join(root, 'tasks')
-    if (existsSync(dir)) fail('tasks/ already exists; refusing to overwrite it')
+    if (existsSync(dir)) {
+      let recognized = false
+      const marker = join(dir, 'project.ason')
+      if (lstatSync(dir).isDirectory() && existsSync(marker) && lstatSync(marker).isFile()) {
+        try { recognized = isTskMarker(parse(readFileSync(marker, 'utf8'))) } catch { /* preserve the unrelated directory */ }
+      }
+      fail(recognized ? 'already a Tsk task directory' : 'not a Tsk task directory; refusing to overwrite tasks/')
+    }
     mkdirSync(dir)
     writeFileSync(join(dir, 'project.ason'), "{ format: 'tsk', version: 1 }\n")
     writeFileSync(join(dir, 'README.md'), '# Tasks\n\nEach ID directory contains a task.ason record with title, spec, status, and needs.\n')
@@ -131,8 +148,10 @@ export function run(argv: string[] = process.argv.slice(2), cwd = process.cwd())
   if (command === 'add') {
     const {positional,values} = options(args, ['--title','--spec','--status','--needs','--fold-into','--once'], ['--once'])
     if (positional.length) fail('Usage: tsk add --title <text> --spec <text>')
+    if (!values.get('--title')?.[0]?.trim()) fail('--title is required')
+    if (!values.get('--spec')?.[0]?.trim()) fail('--spec is required')
     const task = createTask(project, valuesForTask(values))
-    return format === 'human' ? `PLANNED ${task.id} ${task.title}\n` : formatRecord(task, format, project)
+    return format === 'human' ? listRow(task) + '\n' : formatRecord(task, format, project)
   }
   if (command === 'edit') {
     if (!args.length) fail('Usage: tsk edit <id> [options]')
@@ -141,14 +160,16 @@ export function run(argv: string[] = process.argv.slice(2), cwd = process.cwd())
     if (positional.length) fail('Unexpected argument to edit')
     const task = values.size ? { ...valuesForTask(values, current), id } : editInEditor(project, current)
     if (values.size) writeTask(project, task)
-    return formatRecord(task, format, project)
+    return format === 'human' ? formatRecord(task, format, project) + `  title: ${task.title}\n` : formatRecord(task, format, project)
   }
   if (command === 'done') {
     const id = onlyId(args, 'done'), current = getTask(project, id)
-    if (current.status === 'done') fail(`Task ${id} is already done`)
+    if (current.status === 'done') fail(`task ${id} is already done`)
+    const unfinished = prerequisites(project.tasks, id).filter(need => need.status !== 'done').map(need => need.id)
+    if (unfinished.length) fail(`task ${id} has unfinished prerequisites: ${unfinished.join(', ')}`)
     const task: Task = {...current, status:'done'}
     writeTask(project, task)
-    return formatRecord(task, format, project)
+    return format === 'human' ? formatRecord(task, format, project) + '  status: done\n' : formatRecord(task, format, project)
   }
   if (command === 'add-note') {
     if (args.length !== 2) fail('usage: tsk add-note <id> <text>')
@@ -161,11 +182,13 @@ export function run(argv: string[] = process.argv.slice(2), cwd = process.cwd())
   if (command === 'del') {
     const {positional, values} = options(args, ['--force'], ['--force'])
     const id = onlyId(positional, 'del')
+    const task = getTask(project, id)
+    const fileCount = taskFiles(project, id).length
     removeTask(project, id, values.has('--force'))
-    return output({id, status:'deleted'}, format, `DELETED ${id}`)
+    return output({id, deleted: true}, format, listRow(task, fileCount).replace(/^(DONE|PLANNED) +/, 'DELETED '))
   }
   if (command === 'reset') {
-    if (args.length) fail('Usage: tsk reset')
+    if (args.length) fail('reset takes no arguments')
     const changed: string[] = []
     const order: Task[] = []
     const children = new Map<string, Task[]>()
@@ -188,7 +211,8 @@ export function run(argv: string[] = process.argv.slice(2), cwd = process.cwd())
       writeTask(project, {...task, status:'planned'}); changed.push(task.id)
     }
     const kept = [...project.tasks.values()].filter(t => t.status === 'done' && t.once).length
-    return output(changed.sort(), format, `Reset ${changed.length} task${changed.length === 1 ? '' : 's'}${changed.length ? `; ${kept} once task${kept === 1 ? '' : 's'} left done` : ''}`)
+    const summary = `Reset ${changed.length} ${changed.length === 1 ? 'task' : 'tasks'} to planned.${kept ? ` ${kept} ${kept === 1 ? 'task' : 'tasks'} left done (once).` : ''}`
+    return output(changed.sort(), format, summary)
   }
   return fail(`Unknown command: ${command}`)
 }

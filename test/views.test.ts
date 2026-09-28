@@ -31,8 +31,8 @@ describe('task views', () => {
 			expect(json(command, project)).toEqual([])
 			expect(parse(renderView(command, project, [], 'ason'))).toEqual([])
 		}
-		expect(json('tree', project)).toEqual({ nodes: [], edges: [], foldInto: [] })
-		expect(renderView('ls', project, [], 'human')).toContain('0 planned, 0 done')
+		expect(json('tree', project)).toEqual({ nodes: [], dependencies: [], foldInto: [] })
+		expect(renderView('ls', project, [], 'human')).toContain('0 planned tasks found, 0 done')
 	})
 
 	test('ls sorts and filters, counts Unicode code points, preserves optional lists', () => {
@@ -43,8 +43,8 @@ describe('task views', () => {
 		expect(summaries[1].foldedBy).toEqual(['a'])
 		expect(json('ls', project, ['--status=done']).map((item: Task) => item.id)).toEqual(['b'])
 		expect(json('ls', project, ['--status', 'planned']).map((item: Task) => item.id)).toEqual(['a'])
-		expect(renderView('ls', project, [], 'human')).toMatch(/1 planned, 1 done/)
-		expect(() => renderView('ls', project, ['--status=other'])).toThrow('--status must be planned or done')
+		expect(renderView('ls', project, [], 'human')).toMatch(/1 planned task found, 1 done/)
+		expect(() => renderView('ls', project, ['--status=other'])).toThrow('--status requires a value')
 		expect(() => renderView('ls', project, ['--other'])).toThrow('unknown ls option')
 	})
 
@@ -61,8 +61,8 @@ describe('task views', () => {
 		writeFileSync(join(project.tasksDir, 'a', 'nested', 'z.txt'), 'artifact')
 		symlinkSync('nested/z.txt', join(project.tasksDir, 'a', 'shortcut'))
 		const shown = json('show', project, ['a'])
-		expect(shown.dependencies).toEqual([{ id: 'b', title: 'Task b', status: 'done' }])
-		expect(shown.dependents).toEqual(['c'])
+		expect(shown.needs).toEqual([{ id: 'b', title: 'Task b', status: 'done' }])
+		expect(shown.neededBy).toEqual(['c'])
 		expect(shown.foldedBy).toEqual(['c'])
 		expect(shown.files).toEqual(['nested/z.txt', 'shortcut'])
 		expect(json('show', project, ['b']).files).toEqual([])
@@ -75,14 +75,14 @@ describe('task views', () => {
 		const project = fixture([task('d', 'planned', ['b', 'c']), task('c', 'planned', ['a']), task('a', 'done'), task('b', 'planned', ['a'], { foldInto: ['a'] }), task('z', 'planned')])
 		const graph = json('tree', project)
 		expect(graph.nodes.map((item: Task) => item.id)).toEqual(['a', 'b', 'c', 'd', 'z'])
-		expect(graph.edges).toEqual([{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }, { from: 'b', to: 'd' }, { from: 'c', to: 'd' }])
+		expect(graph.dependencies).toEqual([{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }, { from: 'b', to: 'd' }, { from: 'c', to: 'd' }])
 		expect(graph.foldInto).toEqual([{ from: 'b', to: 'a' }])
 		expect(json('tree', project, ['b']).nodes.map((item: Task) => item.id)).toEqual(['b', 'd'])
 		const drawing = renderView('tree', project, [], 'human')
-		expect(drawing).toContain('├─ b')
-		expect(drawing).toContain('└─ c')
-		expect(drawing).toContain('[shared via c]')
-		expect(drawing.match(/d Task d/g)?.length).toBe(2) // the second link does not expand the subtree
+		expect(drawing).toContain('├── b [planned] Task b')
+		expect(drawing).toContain('└── c [planned] Task c')
+		expect(drawing).toContain('d (also needs c; shown above)')
+		expect(drawing.match(/d \[planned\] Task d/g)?.length).toBe(1) // shared link is not expanded twice
 	})
 
 	test('foldable chooses outer tasks, independent of status and needs', () => {
@@ -94,7 +94,7 @@ describe('task views', () => {
 
 test('help and version work without a project and cover commands and workflow', () => {
 	const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
-	expect(version()).toBe(pkg.version + '\n')
+	expect(version()).toBe(`tsk ${pkg.version}\n`)
 	const summary = help()
 	for (const command of ['init', 'add', 'add-note', 'edit', 'del', 'done', 'ls', 'ready', 'show', 'tree', 'foldable', 'reset', 'help', 'version']) expect(summary).toContain(command)
 	expect(summary).toContain(pkg.version)

@@ -36,8 +36,8 @@ test('one checkout launcher works from outside checkout, via symlink, on Node an
     const nodePath = isolatedPath(join(tmp, 'node-bin'), { ...tools, node: process.execPath });
     const bunPath = isolatedPath(join(tmp, 'bun-bin'), { ...tools, bun: run('which', ['bun']) });
     const version = JSON.parse(readFileSync(join(checkout, 'package.json'), 'utf8')).version as string;
-    expect(run(link, ['--version'], { cwd: tmp, env: { ...process.env, PATH: nodePath } })).toBe(version);
-    expect(run(link, ['--version'], { cwd: tmp, env: { ...process.env, PATH: bunPath } })).toBe(version);
+    expect(run(link, ['--version'], { cwd: tmp, env: { ...process.env, PATH: nodePath } })).toBe(`tsk ${version}`);
+    expect(run(link, ['--version'], { cwd: tmp, env: { ...process.env, PATH: bunPath } })).toBe(`tsk ${version}`);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -81,7 +81,7 @@ test('packed npm and Bun installs launch inside a disposable Git repository', ()
     });
     const nodeRuntimeEnv = { ...npmEnv, PATH: nodePath };
     const version = JSON.parse(readFileSync(join(checkout, 'package.json'), 'utf8')).version as string;
-    expect(run(npmBin, ['--version'], { cwd: project, env: nodeRuntimeEnv })).toBe(version);
+    expect(run(npmBin, ['--version'], { cwd: project, env: nodeRuntimeEnv })).toBe(`tsk ${version}`);
     expect(JSON.parse(run(npmBin, ['ls', '--format', 'json'], { cwd: project, env: nodeRuntimeEnv }))).toEqual([]);
 
     const bunExecutable = run('which', ['bun']);
@@ -107,7 +107,7 @@ test('packed npm and Bun installs launch inside a disposable Git repository', ()
       readlink: run('which', ['readlink']),
     });
     const bunRuntimeEnv = { ...bunEnv, PATH: bunPath };
-    expect(run(bunBin, ['--version'], { cwd: project, env: bunRuntimeEnv })).toBe(version);
+    expect(run(bunBin, ['--version'], { cwd: project, env: bunRuntimeEnv })).toBe(`tsk ${version}`);
     expect(JSON.parse(run(bunBin, ['ls', '--format', 'json'], { cwd: project, env: bunRuntimeEnv }))).toEqual([]);
   } finally {
     rmSync(tmp, { recursive: true, force: true });

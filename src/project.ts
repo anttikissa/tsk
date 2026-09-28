@@ -49,7 +49,7 @@ export function loadProject(cwd: string): Project {
 	const markerPath = join(tasksDir, 'project.ason')
 	if (!regularFile(markerPath)) throw new TskError(`${tasksDir} is not a Tsk task directory: project.ason is missing or unsafe`)
 	const marker = readAson(markerPath)
-	if (!isTskMarker(marker)) throw new TskError(`${markerPath}: unsupported or unrecognized Tsk format`)
+	if (!isTskMarker(marker)) throw new TskError(`${markerPath}: does not identify the Tsk format or version`)
 	const keep = (marker as AsonObject).keep
 	if (keep !== undefined && (!Array.isArray(keep) || !keep.every((path) => typeof path === 'string' && safeKeepPath(path)))) {
 		throw new TskError(`${markerPath}: keep must list safe relative paths`)
@@ -60,7 +60,7 @@ export function loadProject(cwd: string): Project {
 			if (entry.isSymbolicLink() && ID_RE.test(entry.name)) throw new TskError(`${entry.name}: task directory must not be a symlink`)
 			continue
 		}
-		if (!ID_RE.test(entry.name)) throw new TskError(`${entry.name}: invalid lowercase Crockford base32 task ID`)
+		if (!ID_RE.test(entry.name)) throw new TskError(`${entry.name}: not a lowercase Crockford base32 task ID`)
 		const path = join(tasksDir, entry.name, 'task.ason')
 		if (!regularFile(path)) throw new TskError(`${path}: task.ason missing or unsafe`)
 		tasks.set(entry.name, { id: entry.name, ...validateRecord(readAson(path), path) })
@@ -85,7 +85,7 @@ export function validateRecord(value: unknown, where: string): TaskRecord {
 	const list = (name: 'notes' | 'needs' | 'foldInto', required = false) => {
 		const val = rec[name]
 		if (!Object.hasOwn(rec, name) && !required) return undefined
-		if (!Array.isArray(val) || !val.every((item) => typeof item === 'string')) bad(`${name} must be a list of strings`)
+		if (!Array.isArray(val) || !val.every((item) => typeof item === 'string')) bad(`${name} must be a list of ${name === 'foldInto' ? 'task IDs' : 'strings'}`)
 		if (name !== 'notes') {
 			const seen = new Set<string>()
 			for (const id of val as string[]) {
@@ -166,15 +166,15 @@ export function validateProject(tasks: Map<string, Task>): void {
 				if (!active.has(node.id)) active.add(node.id)
 				const edge = edges(tasks.get(node.id)!)[node.at++]
 				if (edge === undefined) { active.delete(node.id); visited.add(node.id); ordered.push(node.id); stack.pop(); continue }
-				if (active.has(edge)) throw new TskError(`${label} cycle: ${[...stack.slice(stack.findIndex((item) => item.id === edge)).map((item) => item.id), edge].join(' -> ')}`)
+				if (active.has(edge)) throw new TskError(`${label} cycle: ${[...stack.slice(stack.findIndex((item) => item.id === edge)).map((item) => item.id), edge].join(' -> ')}${label === 'foldInto' ? '; fix your graph' : ''}`)
 				if (!visited.has(edge)) stack.push({ id: edge, at: 0 })
 			}
 		}
 		return ordered
 	}
 	checkCycles((task) => task.needs, 'dependency')
-	checkCycles((task) => task.foldInto ?? [], 'foldInto')
 	for (const task of tasks.values()) checkFoldTargets(tasks, task)
+	checkCycles((task) => task.foldInto ?? [], 'foldInto')
 }
 export const checkDependencies = validateProject
 
@@ -257,7 +257,7 @@ export function generateId(project: Project): string {
 /** Claim an unused short Crockford ID without overwriting an existing directory. */
 export function createTask(project: Project, record: TaskRecord): Task {
 	const valid = validateRecord(record, 'new task')
-	for (const need of valid.needs) if (!project.tasks.has(need)) throw new TskError(`new task needs unknown task ${need}`)
+	for (const need of valid.needs) if (!project.tasks.has(need)) throw new TskError(`unknown dependency ${need}`)
 	checkFoldTargets(project.tasks, valid)
 	for (;;) {
 		const id = generateId(project)

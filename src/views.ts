@@ -26,7 +26,7 @@ function incoming(project: Project): Map<string, string[]> {
 }
 
 function noArgs(command: string, args: string[]): void {
-	if (args.length) throw new TskError(`unexpected argument for ${command}: ${args[0]}`)
+	if (args.length) throw new TskError(`${command} takes no arguments`)
 }
 
 function listOptions(args: string[]): { status?: 'planned' | 'done'; spec: boolean; notes: boolean; foldedBy: boolean } {
@@ -34,8 +34,9 @@ function listOptions(args: string[]): { status?: 'planned' | 'done'; spec: boole
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i]!
 		if (arg === '--status' || arg.startsWith('--status=')) {
+			if (options.status !== undefined) throw new TskError('--status may be given only once')
 			const value = arg === '--status' ? args[++i] : arg.slice('--status='.length)
-			if (value !== 'planned' && value !== 'done') throw new TskError('--status must be planned or done')
+			if (value !== 'planned' && value !== 'done') throw new TskError('--status requires a value (planned or done)')
 			options.status = value
 		} else if (arg === '--spec') options.spec = true
 		else if (arg === '--notes') options.notes = true
@@ -45,14 +46,23 @@ function listOptions(args: string[]): { status?: 'planned' | 'done'; spec: boole
 	return options
 }
 
-function excerpt(text: string, width: number): string {
-	const first = text.replace(/\s+/g, ' ').trim()
-	return [...first].length <= width ? first : [...first].slice(0, width - 1).join('') + '…'
+function row(task: Task, fileCount = 0, align = false): string {
+	const details = [
+		...(task.needs.length ? [`needs ${task.needs.join(', ')}`] : []),
+		...(task.notes?.length ? [`${task.notes.length} ${task.notes.length === 1 ? 'note' : 'notes'}`] : []),
+		...(fileCount ? [`${fileCount} ${fileCount === 1 ? 'file' : 'files'}`] : []),
+	]
+	const status = task.status.toUpperCase()
+	return `${align ? status.padEnd(7) : status} task ${task.id}: ${task.title}${details.length ? ` (${details.join('; ')})` : ''}`
 }
 
-function row(task: Task, plannedPresent = false): string {
-	const status = task.status === 'done' ? plannedPresent ? 'DONE   ' : 'DONE' : 'PLANNED'
-	return `${status} ${task.id} ${task.title}${task.needs.length ? `  needs:${task.needs.join(',')}` : ''}`
+export function listRow(task: Task, fileCount = 0, align = false): string {
+	const prefix = `${row(task, fileCount, align)}: `
+	const bytes = Buffer.byteLength(task.spec, 'utf8')
+	const suffix = ` (${bytes < 1000 ? `${bytes} b` : `${(bytes / 1000).toFixed(1)} kB`})`
+	const text = [...task.spec.replace(/\s+/g, ' ').trim()]
+	const room = Math.max(0, 80 - [...prefix].length - [...suffix].length)
+	return prefix + (text.length > room ? text.slice(0, Math.max(0, room - 1)).join('') + '…' : text.join('')) + suffix
 }
 
 function list(project: Project, args: string[], format: ViewFormat): string {
@@ -66,14 +76,13 @@ function list(project: Project, args: string[], format: ViewFormat): string {
 		...(options.notes && { notes: task.notes ?? [] }),
 		...(options.foldedBy && { foldedBy: foldedBy?.get(task.id) ?? [] }),
 	})), format)
-	const planned = tasks.filter((task) => task.status === 'planned').length
+	const align = tasks.some((task) => task.status === 'planned')
 	const lines = tasks.map((task) => {
-		const fileCount = taskFiles(project, task.id).length
-		const counts = [task.needs.length ? `${task.needs.length} needs` : '', task.notes?.length ? `${task.notes.length} notes` : '', fileCount ? `${fileCount} files` : ''].filter(Boolean).join(', ')
-		const expanded = [options.spec ? `  Spec: ${task.spec}` : '', options.notes && task.notes?.length ? `  Notes:\n${task.notes.map((note) => `    - ${note}`).join('\n')}` : '', options.foldedBy && foldedBy?.get(task.id)?.length ? `  Folded by: ${foldedBy.get(task.id)!.join(', ')}` : ''].filter(Boolean).join('\n')
-		return `${row(task, planned > 0)}${counts ? `  (${counts})` : ''} — ${excerpt(task.spec, 78)} (${Buffer.byteLength(task.spec, 'utf8')} B)${expanded ? `\n${expanded}` : ''}`
+		const expanded = [options.spec ? `  ${task.spec.replaceAll('\n', '\n  ')}` : '', options.notes && task.notes?.length ? `  notes:\n${task.notes.map((note) => `    - ${note.replaceAll('\n', '\n      ')}`).join('\n')}` : '', options.foldedBy && foldedBy?.get(task.id)?.length ? `  foldedBy: ${foldedBy.get(task.id)!.join(', ')}` : ''].filter(Boolean).join('\n')
+		return listRow(task, taskFiles(project, task.id).length, align) + (expanded ? `\n${expanded}` : '')
 	})
-	lines.push(`${planned} planned, ${tasks.length - planned} done`)
+	const planned = [...project.tasks.values()].filter((task) => task.status === 'planned').length
+	lines.push(`${planned} planned ${planned === 1 ? 'task' : 'tasks'} found, ${project.tasks.size - planned} done.`)
 	return lines.join('\n') + '\n'
 }
 
@@ -109,7 +118,7 @@ function ready(project: Project, args: string[], format: ViewFormat): string {
 	noArgs('ready', args)
 	const tasks = readyTasks(project)
 	if (format !== 'human') return encoded(tasks, format)
-	return tasks.length ? tasks.map((task) => row(task, true)).join('\n') + '\n' : 'No ready tasks.\n'
+	return tasks.length ? tasks.map((task) => `${row(task)}\n  spec: ${task.spec.replaceAll('\n', '\n  ')}${task.needs.length ? `\n  needs: ${task.needs.join(', ')}` : ''}`).join('\n') + '\n' : 'No ready tasks.\n'
 }
 
 function foldable(project: Project, args: string[], format: ViewFormat): string {
@@ -117,33 +126,39 @@ function foldable(project: Project, args: string[], format: ViewFormat): string 
 	const targeted = new Set([...project.tasks.values()].filter((task) => task.foldInto?.length).flatMap((task) => task.foldInto!))
 	const tasks = sorted(project).filter((task) => task.foldInto?.length && !targeted.has(task.id))
 	if (format !== 'human') return encoded(tasks, format)
-	return tasks.length ? tasks.map((task) => `${row(task, true)}  → ${task.foldInto!.join(', ')}`).join('\n') + '\n' : 'No foldable tasks.\n'
+	return tasks.length ? tasks.map((task) => `${listRow(task, taskFiles(project, task.id).length)}\n  foldInto → ${task.foldInto!.join(', ')}`).join('\n') + '\n' : 'No results.\n'
 }
 
 function show(project: Project, args: string[], format: ViewFormat): string {
-	if (args.length > 1) throw new TskError(`unexpected argument for show: ${args[1]}`)
+	if (args.length !== 1) throw new TskError('usage: tsk show <id>')
 	const task = getTask(project, args[0])
-	const dependencies = task.needs.map((id) => {
+	const needs = task.needs.map((id) => {
 		const dep = getTask(project, id)
 		return { id: dep.id, title: dep.title, status: dep.status }
 	})
-	const dependents = sorted(project).filter((other) => other.needs.includes(task.id)).map((other) => other.id)
+	const neededBy = sorted(project).filter((other) => other.needs.includes(task.id)).map((other) => other.id)
 	const foldedBy = incoming(project).get(task.id) ?? []
 	const files = taskFiles(project, task.id)
-	if (format !== 'human') return encoded({ ...task, dependencies, dependents, foldedBy, files }, format)
-	const lines = [`${task.id} ${task.title}`, `Status: ${task.status}`, ...(task.once === undefined ? [] : [`Once: ${task.once}`]), `Spec: ${task.spec}`]
-	if (task.notes?.length) lines.push('Notes:', ...task.notes.map((note) => `  - ${note}`))
-	if (dependencies.length) lines.push('Needs:', ...dependencies.map((dep) => `  ${dep.id} ${dep.title} (${dep.status})`))
-	if (dependents.length) lines.push(`Dependents: ${dependents.join(', ')}`)
-	if (task.foldInto?.length) lines.push(`Fold into: ${task.foldInto.join(', ')}`)
-	if (foldedBy.length) lines.push(`Folded by: ${foldedBy.join(', ')}`)
-	if (files.length) lines.push('Files:', ...files.map((file) => `  ${file}`))
+	if (format !== 'human') return encoded({
+		id: task.id, title: task.title, spec: task.spec, status: task.status,
+		...(task.once !== undefined && { once: task.once }),
+		...(task.notes !== undefined && { notes: task.notes }),
+		needs, ...(task.foldInto !== undefined && { foldInto: task.foldInto }),
+		neededBy, foldedBy, files,
+	}, format)
+	const lines = [row(task, files.length), `  ${task.spec.replaceAll('\n', '\n  ')}`]
+	if (task.once) lines.push('  once: true')
+	if (task.foldInto?.length) lines.push(`  foldInto → ${task.foldInto.join(', ')}`)
+	if (neededBy.length) lines.push(`  neededBy: ${neededBy.join(', ')}`)
+	if (foldedBy.length) lines.push(`  foldedBy: ${foldedBy.join(', ')}`)
+	if (task.notes?.length) lines.push('  notes:', ...task.notes.map((note) => `    - ${note.replaceAll('\n', '\n      ')}`))
+	if (files.length) lines.push('  files:', ...files.map((file) => `    - ${file}`))
 	return lines.join('\n') + '\n'
 }
 
 type Edge = { from: string; to: string }
 function tree(project: Project, args: string[], format: ViewFormat): string {
-	if (args.length > 1) throw new TskError(`unexpected argument for tree: ${args[1]}`)
+	if (args.length > 1) throw new TskError('usage: tsk tree [<id>]')
 	const selected = args[0] && getTask(project, args[0]).id
 	const tasks = sorted(project)
 	const children = new Map<string, string[]>()
@@ -171,7 +186,7 @@ function tree(project: Project, args: string[], format: ViewFormat): string {
 	}
 	edges.sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to))
 	foldInto.sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to))
-	if (format !== 'human') return encoded({ nodes, edges, foldInto }, format)
+	if (format !== 'human') return encoded({ nodes, dependencies: edges, foldInto }, format)
 	const roots = selected ? [selected] : nodes.filter((task) => !task.needs.length).map((task) => task.id)
 	const lines: string[] = []
 	const seen = new Set<string>()
@@ -180,12 +195,16 @@ function tree(project: Project, args: string[], format: ViewFormat): string {
 	while (stack.length) {
 		const { id, prefix, connector, parent } = stack.pop()!
 		const task = project.tasks.get(id)!
-		const repeated = seen.has(id)
-		lines.push(`${prefix}${connector}${task.id} ${task.title} (${task.status})${task.foldInto?.length ? ` [fold into: ${task.foldInto.join(', ')}]` : ''}${repeated ? ` [shared via ${parent}]` : ''}`)
-		if (repeated) continue
+		if (seen.has(id)) {
+			lines.push(`${prefix}${connector}${id} (also needs ${parent}; shown above)`)
+			continue
+		}
 		seen.add(id)
+		lines.push(`${prefix}${connector}${id} [${task.status}] ${task.title}`)
+		const nextPrefix = prefix + (connector ? connector === '└── ' ? '    ' : '│   ' : '')
+		if (task.foldInto?.length) lines.push(`${nextPrefix}${connector ? '' : '    '}foldInto → ${task.foldInto.join(', ')}`)
 		const next = (children.get(id) ?? []).filter((child) => visible.has(child))
-		for (let i = next.length - 1; i >= 0; i--) stack.push({ id: next[i]!, parent: id, prefix: prefix + (connector === '├─ ' ? '│  ' : connector === '└─ ' ? '   ' : ''), connector: i === next.length - 1 ? '└─ ' : '├─ ' })
+		for (let i = next.length - 1; i >= 0; i--) stack.push({ id: next[i]!, parent: id, prefix: nextPrefix, connector: i === next.length - 1 ? '└── ' : '├── ' })
 	}
 	return lines.length ? lines.join('\n') + '\n' : 'No tasks.\n'
 }
@@ -203,7 +222,7 @@ export function renderView(command: ViewCommand, project: Project, args: string[
 
 export function version(): string {
 	const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8')) as { version: string }
-	return pkg.version + '\n'
+	return `tsk ${pkg.version}\n`
 }
 
 const usages: Record<string, string> = {
@@ -226,9 +245,12 @@ const usages: Record<string, string> = {
 export function help(command?: string, detailed = false): string {
 	if (command) {
 		if (!Object.hasOwn(usages, command)) throw new TskError(`unknown command: ${command}`)
-		return `${usages[command]}\n\nTask data defaults to concise human output; use --format json|ason for structured output.\n`
+		const [syntax, description, example] = usages[command]!.split('\n')
+		const options = [...new Set([...(syntax!.match(/--[a-z-]+/g) ?? []), '--help'])]
+		if (command === 'version') return `Usage: tsk version\n${description}\nOptions: --help\n${example}\n`
+		return `Usage: ${syntax}\n${description}\nOptions: ${options.join(', ')}\n${example}\n`
 	}
-	const summary = [`tsk ${version().trim()} — task manager for rebuilding software`, 'Usage: tsk <command> [options]', '', 'Commands:', ...Object.entries(usages).map(([name, usage]) => `  ${name.padEnd(10)} ${usage.split('\n')[1]}`), '', 'Options: --help, -h, --version, --detailed-help', 'Task data defaults to human output; use --format json|ason for structured output.', 'Run tsk <command> --help for command usage; tsk --detailed-help for the rebuild workflow.']
-	if (detailed) summary.push('', 'Task format: a Git repository contains tasks/project.ason (format: tsk, version: 1) and flat tasks/<id>/task.ason records. Each task has title, spec, status (planned or done), and needs (prerequisite IDs). Optional once marks a one-off task; notes store observations; foldInto names tasks to incorporate on a rebuild. Other files inside each task directory are task artifacts.', '', 'Rebuild workflow: reset non-once done tasks; repeatedly choose an outermost foldable task, merge its requirements and useful notes into its foldInto targets, move needed files, update references, and delete it; then repeatedly implement a ready task and mark it done.', '', 'Examples:', '  tsk init', '  tsk add --title "Write tests" --spec "Cover the parser"', '  tsk foldable', '  tsk ready --format ason', '  tsk show ab')
+	const summary = [version().trim(), 'Usage: tsk <command> [options]', '', 'Commands:', ...Object.entries(usages).map(([name, usage]) => `  ${name.padEnd(10)} ${usage.split('\n')[1]}`), '', 'Options: --help, -h, --version, --detailed-help', 'Fields: spec, notes, once, foldInto; project keep; task files.', 'Task data defaults to human output; use --format json|ason for structured output.', 'Run tsk <command> --help for command usage; tsk --detailed-help for the rebuild workflow.']
+	if (detailed) summary.push('', 'Project layout: tasks/<id>/task.ason and tasks/project.ason (format: tsk, version: 1).', 'Task fields:', '  title      Required task name', '  spec       Required intended behavior and constraints', '  status     planned or done', '  needs      Prerequisite task IDs', '  once       Optional one-off work retained on reset', '  notes      Optional observations', '  foldInto   Optional rebuild targets', '  format     Human, json, or ason output', '  version    Project format version 1', '  keep       Optional project paths retained on a rebuild', '', 'Example task.ason:', "  { title: 'Add search', spec: 'Search tasks by title.', status: 'planned', needs: [] }", '', 'Rebuild workflow: tsk reset; repeatedly fold a task from tsk foldable into its targets and delete it; then implement and mark done tasks from tsk ready.')
 	return summary.join('\n') + '\n'
 }

@@ -27,6 +27,6 @@ if command -v bun >/dev/null 2>&1; then
 elif command -v node >/dev/null 2>&1; then
   exec node "$entry" "$@"
 else
-  printf '%s\n' 'tsk: install Bun or Node.js (>=22.18) to run tsk' >&2
+  printf '%s\n' 'tsk: Bun or Node.js is required' >&2
   exit 127
 fi

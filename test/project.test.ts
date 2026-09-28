@@ -28,7 +28,7 @@ describe('project discovery and validation', () => {
 		expect(findGitRoot(nested)).toBe(root)
 		expect(loadProject(nested).tasks.get('a')?.spec).toBe('Implement it')
 		writeFileSync(join(root, 'tasks', 'project.ason'), "{ format: 'other', version: 1 }\n")
-		expect(() => loadProject(nested)).toThrow(/unrecognized Tsk format/)
+		expect(() => loadProject(nested)).toThrow(/Tsk format or version/)
 		rmSync(join(root, 'tasks', 'project.ason'))
 		expect(() => loadProject(root)).toThrow(/project\.ason/)
 	})
