@@ -10,6 +10,8 @@ Optional `foldInto: ['a']` is guidance for rewrite agents: in the current build 
 
 For a rebuild, run `tsk reset`, then repeatedly take a task from `tsk foldable`: merge its requirements and useful notes into its targets, move files that must survive, update references to it, and delete it. A task appears in `tsk foldable` when it has foldInto targets and no other folding task targets it; thus a chain is folded from its outer end inward. The command does not change tasks or guarantee `tsk del` will accept them before references are updated, and refuses fold cycles with a fix-your-graph error. Once folding is complete, repeatedly implement a task from `tsk ready` and mark it done.
 
+Value options accept `--option value` and `--option=value`; a value option at the end of the arguments or followed by another `--option` is a missing-value error.
+
 Every task-facing command prints concise human-readable output by default. Commands that return task data also accept `--format json` or `--format ason`; both retain the same structured task information. Errors go to stderr, keeping structured stdout clean.
 
 Specs state what a fresh build must produce; notes record observations from this build. Correct or remove notes that become wrong, useless, or misleading. Delete tasks for behavior no longer wanted rather than leaving them planned. Use `tsk add` to create tasks, `tsk add-note` to append observations, `tsk done` to complete tasks, and `tsk edit` to update task fields through flags or an editor.

@@ -18,6 +18,7 @@ test('ls prints compact rows sorted by ID with totals', () => {
 		expect(lines[2]).toBe('1 planned task found, 1 done.')
 		expect(r.cli('ls', '--status=done').stdout).toStartWith('DONE task b')
 		expect(r.cli('ls', '--status', 'nope').code).toBe(1)
+		expect(r.cli('ls', '--status', '--format', 'ason').stderr).toContain('--status needs a value')
 		expect(r.cli('ls', '--notes').stdout).toContain('  note: y')
 	} finally {
 		r.cleanup()

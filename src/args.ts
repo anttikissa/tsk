@@ -48,7 +48,7 @@ export function parseArgs(args: string[], spec: OptionSpec, command: string): Pa
 			continue
 		}
 		if (value === undefined) {
-			if (i + 1 >= args.length) throw new TskError(`tsk ${command}: --${name} needs a value`)
+			if (i + 1 >= args.length || args[i + 1]!.startsWith('--')) throw new TskError(`tsk ${command}: --${name} needs a value`)
 			value = args[++i]!
 		}
 		if (kind === 'list') {
