@@ -14,6 +14,11 @@ test('ls prints compact rows sorted by ID with totals', () => {
 		expect(lines[0]).toStartWith('PLANNED task a: A (needs b): word word')
 		expect(lines[0]).toEndWith('… (199 b)')
 		expect(lines[0]!.length).toBe(80)
+		const long = repo({ a: task('T'.repeat(90), '', 'planned') })
+		const row = long.cli('ls').stdout.split('\n')[0]!
+		expect([...row].length).toBe(80)
+		expect(row.endsWith('…')).toBe(true)
+		long.cleanup()
 		expect(lines[1]).toBe('DONE    task b: B (2 notes; 1 file): B spec (6 b)')
 		expect(lines[2]).toBe('1 planned task found, 1 done.')
 		expect(r.cli('ls', '--status=done').stdout).toStartWith('DONE task b')

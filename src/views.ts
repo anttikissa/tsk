@@ -66,8 +66,13 @@ export function taskRow(task: Task, padStatus = false): string {
 	const tail = ` (${formatSize(Buffer.byteLength(r.spec))})`
 	const spec = [...r.spec.replace(/\s+/g, ' ').trim()]
 	const room = Math.max(0, WIDTH - [...head].length - [...tail].length)
-	const excerpt = spec.length <= room ? spec.join('') : `${spec.slice(0, Math.max(0, room - 1)).join('')}…`
-	return head + excerpt + tail
+	if (room > 0) {
+		const excerpt = spec.length <= room ? spec.join('') : `${spec.slice(0, room - 1).join('')}…`
+		return head + excerpt + tail
+	}
+	// Title and counts alone overflow: cut the whole row.
+	const row = [...`${head}${spec.join('')}${tail}`]
+	return row.length <= WIDTH ? row.join('') : `${row.slice(0, WIDTH - 1).join('')}…`
 }
 
 /** Indent continuation lines so multiline text stays readable under a prefix. */
