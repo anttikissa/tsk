@@ -82,7 +82,7 @@ const COMMAND_HELP: Record<string, string> = {
  ls: `Usage: tsk ls [--status planned|done] [--spec] [--notes] [--folded-by] [--format json|ason]\nList sorted task summaries; reveal full specs, notes, or incoming fold links on request.\nOptions: --status, --spec, --notes, --folded-by, --format, --help\nExample: tsk ls --status planned --folded-by`,
  ready: `Usage: tsk ready [--format json|ason]\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --format, --help\nExample: tsk ready --format ason`,
  show: `Usage: tsk show <id> [--format json|ason]\nShow a task's fields, dependencies, dependents, incoming fold links and files.\nOptions: --format, --help\nExample: tsk show r --format json`,
- tree: `Usage: tsk tree [<id>] [--format json|ason]\nShow dependency graph from prerequisite roots toward dependents. With an ID, show only that task and downstream dependents. Shared tasks are identified once; foldInto links are annotations, not dependency edges.\nOptions: --format, --help\nExample: tsk tree r`,
+ tree: `Usage: tsk tree [<id>] [--format json|ason]\nShow dependencies from prerequisites toward tasks that need them. With an ID, show that task and its downstream dependents. Repeated nodes say which parent also needs them and are expanded only once; foldInto annotations are not dependency edges.\nOptions: --format, --help\nExample: tsk tree r`,
  edit: `Usage: tsk edit <id> [--title <text>] [--spec <text>] [--status planned|done] [--once true|false] [--needs <id>]... [--fold-into <id>]... [--format json|ason]\nWith no update flags, open VISUAL, EDITOR, or vi. Repeat list flags to replace lists.\nOptions: --title, --spec, --status, --once, --needs, --fold-into, --format, --help\nExample: tsk edit r --title 'New title' --needs a`,
  'add-note': `Usage: tsk add-note <id> <text> [--format json|ason]\nAppend a non-empty note to a planned or done task, creating notes if absent.\nOptions: --format, --help\nExample: tsk add-note r 'Check error messages'`,
  done: `Usage: tsk done <id> [--format json|ason]\nMark a task done when all its prerequisites are done.\nOptions: --format, --help\nExample: tsk done r`,
@@ -138,14 +138,15 @@ function print(value: unknown): void {
 	else console.log(human(value))
 }
 
-function humanRow(task: Task, fileCount = 0, extras: string[] = []): string {
+function humanRow(task: Task, fileCount = 0, extras: string[] = [], align = false): string {
 	const details = [
 		...(task.needs.length ? [`needs ${task.needs.join(', ')}`] : []),
 		...(task.notes?.length ? [`${task.notes.length} ${task.notes.length === 1 ? 'note' : 'notes'}`] : []),
 		...(fileCount ? [`${fileCount} ${fileCount === 1 ? 'file' : 'files'}`] : []),
 		...extras,
 	]
-	return `${task.status.toUpperCase().padEnd(7)} task ${task.id}: ${task.title}${details.length ? ` (${details.join('; ')})` : ''}`
+	const status = task.status.toUpperCase()
+	return `${align ? status.padEnd(7) : status} task ${task.id}: ${task.title}${details.length ? ` (${details.join('; ')})` : ''}`
 }
 
 function specSize(spec: string): string {
@@ -153,8 +154,8 @@ function specSize(spec: string): string {
 	return bytes < 1000 ? `${bytes} b` : `${(bytes / 1000).toFixed(1)} kB`
 }
 
-function listRow(task: Task, fileCount: number, extras: string[] = [], width = 80): string {
-	const prefix = `${humanRow(task, fileCount, extras)}: `
+function listRow(task: Task, fileCount: number, extras: string[] = [], width = 80, align = false): string {
+	const prefix = `${humanRow(task, fileCount, extras, align)}: `
 	const suffix = ` (${specSize(task.spec)})`
 	const text = task.spec.replace(/\s+/g, ' ').trim()
 	const room = Math.max(0, width - [...prefix].length - [...suffix].length)
@@ -362,18 +363,23 @@ function renderTree(graph: ReturnType<typeof treeGraph>): string {
 	}
 	const seen = new Set<string>()
 	const lines: string[] = []
-	const draw = (id: string, depth: number) => {
+	const draw = (id: string, prefix = '', branch = '', parent?: string) => {
 		const task = byId.get(id)!
-		const indent = '  '.repeat(depth)
-		if (seen.has(id)) { lines.push(`${indent}↳ ${id} (shared)`); return }
+		if (seen.has(id)) {
+			lines.push(`${prefix}${branch}${id} (also needs ${parent}; shown above)`)
+			return
+		}
 		seen.add(id)
-		lines.push(`${indent}${id} [${task.status}] ${task.title}`)
-		for (const target of (folds.get(id) ?? []).sort()) lines.push(`${indent}  foldInto → ${target}`)
-		for (const child of children.get(id) ?? []) draw(child, depth + 1)
+		lines.push(`${prefix}${branch}${id} [${task.status}] ${task.title}`)
+		const nextPrefix = prefix + (branch ? (branch === '└── ' ? '    ' : '│   ') : '')
+		const targets = (folds.get(id) ?? []).sort()
+		if (targets.length) lines.push(`${nextPrefix}${branch ? '' : '    '}foldInto → ${targets.join(', ')}`)
+		const dependents = children.get(id) ?? []
+		dependents.forEach((child, index) => draw(child, nextPrefix, index === dependents.length - 1 ? '└── ' : '├── ', id))
 	}
 	const childIds = new Set(graph.dependencies.map((edge) => edge.to))
-	for (const task of graph.nodes) if (!childIds.has(task.id)) draw(task.id, 0)
-	for (const task of graph.nodes) if (!seen.has(task.id)) draw(task.id, 0)
+	for (const task of graph.nodes) if (!childIds.has(task.id)) draw(task.id)
+	for (const task of graph.nodes) if (!seen.has(task.id)) draw(task.id)
 	return lines.join('\n')
 }
 
@@ -451,9 +457,10 @@ const commands: Record<string, Command> = {
 			}))
 		if (outputFormat === 'human') {
 			const visible = all.filter((task) => status === undefined || task.status === status)
+			const align = visible.some((task) => task.status === 'planned')
 			for (const task of visible) {
 				const foldedBy = includeFoldedBy ? all.filter((other) => other.foldInto?.includes(task.id)).map((other) => other.id) : []
-				console.log(listRow(task, artifactFiles(join(project.tasksDir, task.id)).length, foldedBy.length ? [`foldedBy ${foldedBy.join(', ')}`] : []))
+				console.log(listRow(task, artifactFiles(join(project.tasksDir, task.id)).length, foldedBy.length ? [`foldedBy ${foldedBy.join(', ')}`] : [], 80, align))
 				if (includeSpec) console.log(`  ${task.spec.replaceAll('\n', '\n  ')}`)
 				if (includeNotes && task.notes?.length) console.log('  notes:\n' + task.notes.map((note) => `    - ${note.replaceAll('\n', '\n      ')}`).join('\n'))
 			}

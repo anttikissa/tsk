@@ -9,7 +9,7 @@ test('tree renders chains and diamond convergence without duplicate expansion', 
 	})
 	const result = tskHuman(root, 'tree')
 	expect(result.code).toBe(0)
-	expect(result.out).toContain('a [done] T\n  b [planned] T\n    d [planned] T\n      e [planned] T\n  c [planned] T\n    ↳ d (shared)')
+	expect(result.out).toBe('a [done] T\n├── b [planned] T\n│   └── d [planned] T\n│       └── e [planned] T\n└── c [planned] T\n    └── d (also needs c; shown above)\n')
 	expect(result.out.match(/d \[planned\]/g)).toHaveLength(1)
 })
 
@@ -20,8 +20,14 @@ test('tree filters to a task and downstream, while folds remain separately annot
 	})
 	const result = tskHuman(root, 'tree', 'b')
 	expect(result.code).toBe(0)
-	expect(result.out).toBe('b [planned] T\n  foldInto → a\n  c [planned] T\n')
+	expect(result.out).toBe('b [planned] T\n    foldInto → a\n└── c [planned] T\n')
 	expect(result.out).not.toContain('a [done]')
+})
+
+test('tree joins multiple fold targets without treating folds as children', () => {
+	const root = makeRepo({ a: task('done'), b: task('done'), c: task('planned', ['a', 'b'], "foldInto: ['a', 'b'],") })
+	const result = tskHuman(root, 'tree', 'c')
+	expect(result.out).toBe('c [planned] T\n    foldInto → a, b\n')
 })
 
 test('tree machine output retains deterministic nodes, dependency edges, and fold links', () => {

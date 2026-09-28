@@ -82,6 +82,11 @@ counts, a short spec excerpt, and spec size; its footer counts planned and done
 tasks. `tsk show <id>` prints the full spec and nonempty details. `tsk reset`
 reports how many tasks changed and how many one-off tasks stayed done.
 
+`tsk tree` starts with tasks that need nothing and draws branches toward tasks
+that depend on them. If a task needs multiple parents, it is expanded under
+the first and linked under the others as "also needs …; shown above". A
+`foldInto →` line is an annotation, not a dependency branch.
+
 ## Installing
 
 With Bun or Node.js:

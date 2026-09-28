@@ -15,6 +15,13 @@ test('ls prints compact task summaries sorted by ID', () => {
 	expect(out).not.toContain('spec:')
 })
 
+test('ls does not pad done-only rows, but aligns statuses in a mixed list', () => {
+	const done = makeRepo({ a: task('done'), b: task('done') })
+	expect(tskHuman(done, 'ls').out).toStartWith('DONE task a: T: D (1 b)\nDONE task b: T: D (1 b)\n')
+	const mixed = makeRepo({ a: task('done'), b: task('planned') })
+	expect(tskHuman(mixed, 'ls').out).toStartWith('DONE    task a: T: D (1 b)\nPLANNED task b: T: D (1 b)\n')
+})
+
 test('ls filters status and reveals requested fields with Unicode character lengths', () => {
 	const root = makeRepo({
 		a: task('planned', [], "spec: '猫🙂', notes: ['é', '🧪'],"),
@@ -28,7 +35,7 @@ test('ls filters status and reveals requested fields with Unicode character leng
 	}])
 	const human = tskHuman(root, 'ls', '--status', 'done', '--spec', '--notes', '--folded-by')
 	expect(human.code).toBe(0)
-	expect(human.out).toContain('DONE    task b: T: D (1 b)')
+	expect(human.out).toContain('DONE task b: T: D (1 b)')
 	expect(human.out).toContain('  D')
 	expect(human.out).not.toContain('notes: (none)')
 	expect(human.out).not.toContain('foldedBy: (none)')
