@@ -49,9 +49,9 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | `tsk add --title <text> --spec <text> [--needs <id>]... [--fold-into <id>]...` | Add a planned task; repeat `--needs` or `--fold-into` for multiple IDs. Optionally pass `--status done`. |
 | `tsk del <id> [--force]` | Delete an unreferenced task; requires `--force` when artifacts are present. |
 | `tsk add-note <id> <text>` | Append an observation to a planned or done task's notes. |
-| `tsk ls` | List every task's ID, title, status, and dependencies. |
+| `tsk ls [--status planned|done] [--spec] [--notes] [--folded-by]` | List sorted task summaries with counts and lengths; reveal full specs, notes, or incoming fold links on request. |
 | `tsk ready` | List planned tasks whose dependencies are all done. |
-| `tsk show <id>` | Show a task with its direct dependencies, dependents, and artifact paths. |
+| `tsk show <id>` | Show a task with its direct dependencies, dependents, incoming fold links, and artifact paths. |
 | `tsk done <id>` | Mark a task done, provided all its dependencies are done. |
 | `tsk reset` | Set done tasks back to planned for a rebuild, except `once: true` tasks. |
 | `tsk version` (or `tsk --version`) | Print the installed package version. |

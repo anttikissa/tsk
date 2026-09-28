@@ -1,16 +1,66 @@
 import { expect, test } from 'bun:test'
-import { makeRepo, task, tsk } from './helpers.ts'
+import { parse } from '../src/ason.ts'
+import { makeRepo, task, tsk, tskHuman } from './helpers.ts'
 
-test('ls prints every task sorted by ID with title, status, and needs', () => {
+test('ls prints compact task summaries sorted by ID', () => {
 	const root = makeRepo({ b: task('planned', ['a'], "once: true, notes: ['n'],"), a: task('done'), '10': task('planned') })
 	const { code, out } = tsk(root, 'ls')
 	expect(code).toBe(0)
-	expect(out).toBe(`[
-	{ id: '10', title: 'T', status: 'planned', needs: [] },
-	{ id: 'a', title: 'T', status: 'done', needs: [] },
-	{ id: 'b', title: 'T', status: 'planned', needs: ['a'] }
-]
-`)
+	expect(parse(out)).toEqual([
+		{ id: '10', title: 'T', status: 'planned', needs: [], noteCount: 0, specLength: 1 },
+		{ id: 'a', title: 'T', status: 'done', needs: [], noteCount: 0, specLength: 1 },
+		{ id: 'b', title: 'T', status: 'planned', needs: ['a'], noteCount: 1, specLength: 1 },
+	])
+	expect(out).not.toContain('notes:')
+	expect(out).not.toContain('spec:')
+})
+
+test('ls filters status and reveals requested fields with Unicode character lengths', () => {
+	const root = makeRepo({
+		a: task('planned', [], "spec: '猫🙂', notes: ['é', '🧪'],"),
+		b: task('done'),
+	})
+	const { code, out } = tsk(root, 'ls', '--status', 'planned', '--spec', '--notes', '--folded-by', '--format', 'json')
+	expect(code).toBe(0)
+	expect(JSON.parse(out)).toEqual([{
+		id: 'a', title: 'T', status: 'planned', needs: [], noteCount: 2, specLength: 2,
+		spec: '猫🙂', notes: ['é', '🧪'], foldedBy: [],
+	}])
+	const human = tskHuman(root, 'ls', '--status', 'done', '--spec', '--notes', '--folded-by')
+	expect(human.code).toBe(0)
+	expect(human.out).toContain('spec: D')
+	expect(human.out).toContain('notes: (none)')
+	expect(human.out).toContain('foldedBy: (none)')
+})
+
+test('ls folded-by lists incoming fold links in stable ID order', () => {
+	const root = makeRepo({
+		a: task('done'),
+		b: task('planned', [], "foldInto: ['a'],"),
+		c: task('planned', [], "foldInto: ['a'],"),
+	})
+	const result = tsk(root, 'ls', '--folded-by', '--format', 'ason')
+	expect(result.code).toBe(0)
+	expect(parse(result.out)).toEqual([
+		{ id: 'a', title: 'T', status: 'done', needs: [], noteCount: 0, specLength: 1, foldedBy: ['b', 'c'] },
+		{ id: 'b', title: 'T', status: 'planned', needs: [], noteCount: 0, specLength: 1, foldedBy: [] },
+		{ id: 'c', title: 'T', status: 'planned', needs: [], noteCount: 0, specLength: 1, foldedBy: [] },
+	])
+})
+
+test('ls reports errors for invalid filters and options', () => {
+	const root = makeRepo({ a: task('done') })
+	for (const [args, message] of [
+		[['--status'], '--status requires a value'],
+		[['--status', 'other'], '--status requires a value'],
+		[['--status', 'done', '--status', 'planned'], '--status may be given only once'],
+		[['--nonsense'], 'unknown ls option: --nonsense'],
+	] as const) {
+		const result = tsk(root, 'ls', ...args)
+		expect(result.code).toBe(1)
+		expect(result.out).toBe('')
+		expect(result.err).toContain(message)
+	}
 })
 
 test('ls prints [] for an empty project', () => {

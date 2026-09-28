@@ -22,6 +22,7 @@ test('show prints the task with direct dependencies and dependents', () => {
 	notes: ['first', 'second'],
 	needs: [{ id: 'a', title: 'T', status: 'done' }],
 	neededBy: ['c'],
+	foldedBy: [],
 	artifacts: []
 }
 `)
@@ -29,12 +30,12 @@ test('show prints the task with direct dependencies and dependents', () => {
 	expect(tsk(root, 'show', 'd').out).toContain('neededBy: []')
 })
 
-test('show exposes optional foldInto targets separately from needs', () => {
+test('show exposes optional foldInto targets separately from needs and always lists incoming links', () => {
 	const root = makeRepo({ a: task('done'), b: task('planned', ['a'], "foldInto: ['a'],") })
 	const result = tsk(root, 'show', 'b')
 	expect(result.code).toBe(0)
-	expect(parse(result.out)).toMatchObject({ foldInto: ['a'], needs: [{ id: 'a', status: 'done' }] })
-	expect(tsk(root, 'show', 'a').out).not.toContain('foldInto:')
+	expect(parse(result.out)).toMatchObject({ foldInto: ['a'], foldedBy: [], needs: [{ id: 'a', status: 'done' }] })
+	expect(parse(tsk(root, 'show', 'a').out)).toMatchObject({ foldedBy: ['b'] })
 })
 
 test('show lists task artifacts recursively in stable relative-path order', () => {

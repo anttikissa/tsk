@@ -19,7 +19,7 @@ Commands:
   add     Add a task: --title <text> --spec <text>
           [--status planned|done] [--needs <id>]... [--fold-into <id>]...
   del     Delete an unreferenced task: <id> [--force]
-  ls      List all tasks (ID, title, status, needs)
+  ls      Browse task summaries: --status, --spec, --notes, --folded-by
   ready   List planned tasks whose dependencies are done
   show    Show one task, its links and artifacts: <id>
   edit    Edit a task: <id> [--title <text>] [--spec <text>] [--status planned|done]
@@ -78,7 +78,7 @@ entries when rebuilding. See tsk <command> --help for command examples.`
 const COMMAND_HELP: Record<string, string> = {
 	init: `Usage: tsk init [--format json|ason]\nCreate tasks/ and a project marker at the nearest Git root.\nOptions: --format, --help\nExample: tsk init`,
  add: `Usage: tsk add --title <text> --spec <text> [--status planned|done] [--needs <id>]... [--fold-into <id>]... [--format json|ason]\nCreate a task. Repeat --needs and --fold-into for multiple IDs; foldInto is advisory rewrite guidance, not a dependency.\nOptions: --title, --spec, --status, --needs, --fold-into, --format, --help\nExample: tsk add --title 'Write tests' --spec 'Cover search' --needs r`,
- ls: `Usage: tsk ls [--format json|ason]\nList task IDs, titles, statuses and dependencies.\nOptions: --format, --help\nExample: tsk ls --format json`,
+ ls: `Usage: tsk ls [--status planned|done] [--spec] [--notes] [--folded-by] [--format json|ason]\nList sorted task summaries; reveal full specs, notes, or incoming fold links on request.\nOptions: --status, --spec, --notes, --folded-by, --format, --help\nExample: tsk ls --status planned --folded-by`,
  ready: `Usage: tsk ready [--format json|ason]\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --format, --help\nExample: tsk ready --format ason`,
  show: `Usage: tsk show <id> [--format json|ason]\nShow a task's fields, dependencies, dependents and artifact paths.\nOptions: --format, --help\nExample: tsk show r --format json`,
  edit: `Usage: tsk edit <id> [--title <text>] [--spec <text>] [--status planned|done] [--once true|false] [--needs <id>]... [--fold-into <id>]... [--format json|ason]\nWith no update flags, open VISUAL, EDITOR, or vi. Repeat list flags to replace lists.\nOptions: --title, --spec, --status, --once, --needs, --fold-into, --format, --help\nExample: tsk edit r --title 'New title' --needs a`,
@@ -281,9 +281,38 @@ const commands: Record<string, Command> = {
 	},
 
 	ls(args, cwd) {
-		noArgs('ls', args)
+		let status: Task['status'] | undefined
+		let includeSpec = false
+		let includeNotes = false
+		let includeFoldedBy = false
+		for (let i = 0; i < args.length; i++) {
+			const arg = args[i]!
+			if (arg === '--status') {
+				if (status !== undefined) throw new TskError('--status may be given only once')
+				const value = args[++i]
+				if (value !== 'planned' && value !== 'done') throw new TskError('--status requires a value (planned or done)')
+				status = value
+			} else if (arg === '--spec') includeSpec = true
+			else if (arg === '--notes') includeNotes = true
+			else if (arg === '--folded-by') includeFoldedBy = true
+			else throw new TskError(`unknown ls option: ${arg}`)
+		}
 		const { tasks } = loadProject(cwd)
-		print(sortedTasks(tasks).map(({ id, title, status, needs }) => ({ id, title, status, needs })))
+		const all = sortedTasks(tasks)
+		const results = all
+			.filter((task) => status === undefined || task.status === status)
+			.map((task) => ({
+				id: task.id,
+				title: task.title,
+				status: task.status,
+				needs: task.needs,
+				noteCount: task.notes?.length ?? 0,
+				specLength: [...task.spec].length,
+				...(includeSpec && { spec: task.spec }),
+				...(includeNotes && { notes: task.notes ?? [] }),
+				...(includeFoldedBy && { foldedBy: all.filter((other) => other.foldInto?.includes(task.id)).map((other) => other.id) }),
+			}))
+		print(results)
 	},
 
 	ready(args, cwd) {
@@ -310,6 +339,7 @@ const commands: Record<string, Command> = {
 			}),
 			...(foldInto !== undefined && { foldInto }),
 			neededBy: sortedTasks(project.tasks).filter((other) => other.needs.includes(id)).map((other) => other.id),
+			foldedBy: sortedTasks(project.tasks).filter((other) => other.foldInto?.includes(id)).map((other) => other.id),
 			artifacts: artifactFiles(join(project.tasksDir, id)),
 		})
 	},
