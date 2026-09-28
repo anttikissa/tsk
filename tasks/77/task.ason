@@ -1,6 +1,6 @@
 {
 	title: 'Command help',
-	spec: 'tsk help, tsk --help, and tsk -h show the same concise usage guide with the commands available in this build. No-argument usage is helpful.',
-	status: 'done',
+	spec: 'tsk, tsk help, tsk --help, and tsk -h show concise usage, the package version, and every command and feature (including add-note, edit, del, tree and foldable), and point to tsk --detailed-help. Detailed help explains the full task and project structure, every supported field (spec, not description), notes and files, and the reset/fold/ready rebuild workflow with concise examples. tsk <command> --help gives command-specific usage, options, and examples. Help never runs commands or requires a Tsk project; describe human output defaults and structured formats.',
+	status: 'planned',
 	needs: ['6']
 }

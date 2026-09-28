@@ -1,7 +1,0 @@
-{
-	title: 'Browse and filter task summaries',
-	spec: 'tsk ls lists tasks sorted by ID. Human output shows one compact row per task with status, ID, title, nonempty needs/note/file counts, an approximately 80-column spec excerpt and byte size, plus planned/done totals; pad DONE only when planned rows are present. --status filters rows and accepts space or = before the value; --spec and --notes reveal full content; --folded-by reveals incoming fold links. Structured output includes ID, title, status, needs, noteCount, Unicode-code-point specLength, and requested optional fields. tsk show also lists incoming links as foldedBy.',
-	status: 'done',
-	needs: ['ec', 'wd'],
-	foldInto: ['fk', '5p']
-}

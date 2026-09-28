@@ -1,7 +1,0 @@
-{
-	title: 'Delete tasks safely through Tsk',
-	spec: 'tsk del <id> removes only that validated task directory through the CLI. Refuse deletion if another task needs it or folds into it, or if it contains files without explicit --force. Never follow symlinks or remove unrelated paths; explain refusals without changing the project. Human output shows a DELETED task row.',
-	status: 'done',
-	needs: ['wd', 'r'],
-	foldInto: ['r', 'wd']
-}
