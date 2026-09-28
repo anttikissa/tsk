@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 import { mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { parse } from '../src/ason.ts'
 import { tempDir, tsk } from './helpers.ts'
 
 function gitRoot() {
@@ -12,9 +13,9 @@ function gitRoot() {
 test('init creates tasks/ at the Git root from a subdirectory', () => {
 	const root = gitRoot()
 	mkdirSync(join(root, 'src'))
-	const { code, out } = tsk(join(root, 'src'), 'init')
+	const { code, out } = tsk(join(root, 'src'), 'init', '--format', 'ason')
 	expect(code).toBe(0)
-	expect(out).toBe(`{ tasksDir: '${realpathSync(join(root, 'tasks'))}' }\n`)
+	expect(parse(out)).toEqual({ tasksDir: realpathSync(join(root, 'tasks')) })
 	expect(readdirSync(join(root, 'tasks')).sort()).toEqual(['README.md', 'project.ason'])
 	expect(readFileSync(join(root, 'tasks', 'project.ason'), 'utf8')).toBe("{ format: 'tsk', version: 1 }\n")
 	expect(tsk(root, 'ls').out).toBe('[]\n')
