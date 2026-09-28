@@ -210,6 +210,22 @@ export function unfinishedPrerequisites(id: string, tasks: Map<string, Task>): s
 	return [...seen].filter((need) => tasks.get(need)!.status !== 'done').sort(compareIds)
 }
 
+// Planned tasks whose whole prerequisite chain is done, sorted by ID.
+export function readyTasks(tasks: Map<string, Task>): Task[] {
+	const chainDone = new Map<string, boolean>()
+	const settled = (id: string): boolean => {
+		let known = chainDone.get(id)
+		if (known === undefined) {
+			known = tasks.get(id)!.needs.every((need) => tasks.get(need)!.status === 'done' && settled(need))
+			chainDone.set(id, known)
+		}
+		return known
+	}
+	return sortedIds(tasks)
+		.map((id) => tasks.get(id)!)
+		.filter((task) => task.status === 'planned' && settled(task.id))
+}
+
 export function requireTask(project: Project, id: string): Task {
 	const task = project.tasks.get(id)
 	if (!task) fail(`unknown task: ${id}`)

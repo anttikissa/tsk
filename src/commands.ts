@@ -12,6 +12,7 @@ import {
 	foldersOf,
 	loadProject,
 	readProjectMarker,
+	readyTasks,
 	requireTask,
 	sortedIds,
 	taskFiles,
@@ -205,9 +206,7 @@ export function ready(args: string[]): void {
 	formatOf(parsed)
 	noPositionals('ready', parsed)
 	const project = loadProject(cwd())
-	const tasks = sortedIds(project.tasks)
-		.map((id) => project.tasks.get(id)!)
-		.filter((t) => t.status === 'planned' && !unfinishedPrerequisites(t.id, project.tasks).length)
+	const tasks = readyTasks(project.tasks)
 	printList(project, parsed, tasks, (list) => list.map((t) => `PLANNED task ${t.id}: ${t.title}\n  spec: ${t.spec.replace(/\n/g, '\n  ')}`), record)
 }
 
