@@ -1,6 +1,6 @@
 {
 	title: 'Mark a task done',
 	spec: 'tsk done <id> changes a planned task to done and prints human detail or the full record with --format json|ason; refuse unknown IDs, already-done tasks and unfinished prerequisites anywhere in the dependency chain (including behind completed one-off tasks). tsk edit <id> opens VISUAL/EDITOR (fallback vi) or updates title, spec, status, once, needs and foldInto by flags (space or = values; repeated needs/foldInto replace lists). Preserve unspecified fields; editor mode edits notes too. Validate the full resulting graph before replacing the original; retain it on editor failure or invalid input, and enforce done prerequisite checks for status changes. tsk add-note <id> <text> appends nonempty notes to planned or done tasks, creating notes if absent, preserving supported comments and other fields and displaying multiline notes readably; print human details or the full structured record and reject invalid arguments or unknown IDs. Task records/output require spec, not obsolete description; human outputs omit empty sections, structured data use --format json|ason, and errors go to stderr.',
-	status: 'done',
+	status: 'planned',
 	needs: ['r']
 }

@@ -1,6 +1,6 @@
 {
 	title: 'List tasks available for folding',
 	spec: 'tsk foldable lists tasks with nonempty foldInto that no other foldInto task targets, sorted by ID, regardless of status or prerequisites. As outer tasks are deleted, their targets become foldable; refuse a foldInto cycle with a fix-your-graph error. Return full task records in structured JSON/ASON and concise human rows; structured output is [] when none. Do not mutate tasks; include the command in help.',
-	status: 'done',
+	status: 'planned',
 	needs: ['wd', '77']
 }
