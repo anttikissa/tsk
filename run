@@ -1,0 +1,4 @@
+#!/bin/sh
+# The only Tsk launcher.
+dir=$(cd "$(dirname "$0")" && pwd -P) || exit 1
+exec bun "$dir/src/cli.ts" "$@"
