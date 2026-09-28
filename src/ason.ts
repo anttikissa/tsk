@@ -9,11 +9,14 @@
 /** Symbol key for attaching comments to AsonObject/AsonArray. */
 export const COMMENTS = Symbol('comments')
 
+/** Request multiline rendering without changing an array's values or comments. */
+export const MULTILINE = Symbol('multiline')
+
 /** Any value representable in ASON. */
 export type AsonValue = string | number | bigint | boolean | null | undefined | AsonArray | AsonObject
 
 /** Array with optional comment metadata per element. */
-export type AsonArray = AsonValue[] & { [COMMENTS]?: (string | undefined)[] }
+export type AsonArray = AsonValue[] & { [COMMENTS]?: (string | undefined)[]; [MULTILINE]?: boolean }
 /** Object with optional comment metadata per key. */
 export type AsonObject = {
 	[key: string]: AsonValue
@@ -74,7 +77,7 @@ function stringifyValue(obj: unknown, col: number, depth: number, maxWidth: numb
 		if (obj.length === 0) return '[]'
 		const comments = maxWidth < Infinity ? (obj as AsonArray)[COMMENTS] : undefined
 		const inline = maxWidth === 0 ? '' : `[${obj.map((v) => stringifyValue(v, 0, depth, maxWidth)).join(', ')}]`
-		return renderCollection('[', ']', inline, col, depth, maxWidth, !!comments, (pad, childDepth) =>
+		return renderCollection('[', ']', inline, col, depth, maxWidth, !!comments || !!(obj as AsonArray)[MULTILINE], (pad, childDepth) =>
 			obj.map((v, i) => `${commentPrefix(comments?.[i], pad)}${pad}${stringifyValue(v, childDepth * 2, childDepth, maxWidth)}${i < obj.length - 1 ? ',' : ''}`),
 		)
 	}

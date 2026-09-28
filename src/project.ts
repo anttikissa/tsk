@@ -2,7 +2,7 @@
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, rmdirSync, writeFileSync } from 'node:fs'
 import { randomBytes } from 'node:crypto'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
-import { COMMENTS, parse, stringify, type AsonObject, type AsonValue, type StringifyMode } from './ason.ts'
+import { COMMENTS, MULTILINE, parse, stringify, type AsonArray, type AsonObject, type AsonValue, type StringifyMode } from './ason.ts'
 
 export class TskError extends Error {}
 export type Status = 'planned' | 'done'
@@ -172,16 +172,8 @@ export function validateProject(tasks: Map<string, Task>): void {
 		}
 		return ordered
 	}
-	const dependencyOrder = checkCycles((task) => task.needs, 'dependency')
+	checkCycles((task) => task.needs, 'dependency')
 	checkCycles((task) => task.foldInto ?? [], 'foldInto')
-	// Even an already-completed one-off task cannot conceal unfinished ancestors.
-	const pending = new Map<string, string | undefined>()
-	for (const id of dependencyOrder) {
-		const task = tasks.get(id)!
-		const blocker = task.needs.map((need) => tasks.get(need)!.status === 'planned' ? need : pending.get(need)).find(Boolean)
-		if (task.status === 'done' && !task.once && blocker) throw new TskError(`task ${id} is done but prerequisite ${blocker} is planned`)
-		pending.set(id, blocker)
-	}
 	for (const task of tasks.values()) checkFoldTargets(tasks, task)
 }
 export const checkDependencies = validateProject
@@ -228,6 +220,13 @@ export function writeTask(project: Project, task: Task): void {
 	const { id: _id, ...fields } = task
 	const record = validateRecord({ ...fields, [COMMENTS]: (task as Task & AsonObject)[COMMENTS] ?? original[COMMENTS] }, `task ${task.id}`)
 	const candidate: Task = { id: task.id, ...record }
+	const oldNotes = original.notes as AsonArray | undefined
+	const nextNotes = record.notes as AsonArray | undefined
+	if (nextNotes && oldNotes?.[COMMENTS]) {
+		const retained = oldNotes[COMMENTS]!.map((comment, index) => nextNotes[index] === oldNotes[index] ? comment : undefined)
+		if (retained.some(Boolean)) nextNotes[COMMENTS] = retained
+	}
+	if (nextNotes && nextNotes.length > 1) nextNotes[MULTILINE] = true
 	const updated = new Map(project.tasks)
 	updated.set(task.id, candidate)
 	validateProject(updated)
@@ -260,18 +259,6 @@ export function createTask(project: Project, record: TaskRecord): Task {
 	const valid = validateRecord(record, 'new task')
 	for (const need of valid.needs) if (!project.tasks.has(need)) throw new TskError(`new task needs unknown task ${need}`)
 	checkFoldTargets(project.tasks, valid)
-	if (valid.status === 'done') {
-		const seen = new Set<string>()
-		const stack = [...valid.needs]
-		while (stack.length) {
-			const id = stack.pop()!
-			if (seen.has(id)) continue
-			seen.add(id)
-			const prerequisite = project.tasks.get(id)!
-			if (prerequisite.status !== 'done') throw new TskError(`new task cannot be done: prerequisite ${id} is planned`)
-			stack.push(...prerequisite.needs)
-		}
-	}
 	for (;;) {
 		const id = generateId(project)
 		const task = { id, ...valid }

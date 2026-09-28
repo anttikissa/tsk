@@ -75,6 +75,7 @@ test('failed editor and invalid notes leave the original record intact', () => f
     process.env.VISUAL = 'false'
     expect(() => run(['edit','a'],root)).toThrow(/Editor failed/)
   } finally { if (old === undefined) delete process.env.VISUAL; else process.env.VISUAL = old }
-  expect(() => run(['add-note','a','bad\nnote'],root)).toThrow(/single-line/)
-  expect(readFileSync(path,'utf8')).toBe(initial)
+    expect(readFileSync(path,'utf8')).toBe(initial)
+    expect(run(['add-note','a','bad\nnote'],root)).toContain('bad\nnote')
+    expect(readFileSync(path,'utf8')).toContain('bad\nnote')
 }))

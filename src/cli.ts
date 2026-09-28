@@ -68,7 +68,8 @@ function valuesForTask(values: Map<string,string[]>, current?: Task): Omit<Task,
   if (onceValue !== undefined && onceValue !== 'true' && onceValue !== 'false') fail('Once must be true or false')
   const record: Omit<Task,'id'> = { title, spec, status, needs: values.get('--needs') ?? current?.needs ?? [] }
   if (values.has('--fold-into') || current?.foldInto) record.foldInto = values.get('--fold-into') ?? current?.foldInto
-  if (onceValue === 'true' || (onceValue === undefined && current?.once)) record.once = true
+  if (onceValue !== undefined) record.once = onceValue === 'true'
+  else if (current?.once !== undefined) record.once = current.once
   if (current?.notes) record.notes = current.notes
   return record
 }
@@ -77,13 +78,14 @@ function editInEditor(project: Project, task: Task): Task {
   const dir = mkdtempSync(join(tmpdir(), 'tsk-edit-'))
   const file = join(dir, 'task.ason')
   try {
-    writeFileSync(file, stringify(task) + '\n')
+    writeFileSync(file, readFileSync(join(project.tasksDir, task.id, 'task.ason')))
     const result = spawnSync('sh', ['-c', `${editor} "$1"`, 'tsk-editor', file], { stdio: 'inherit' })
     if (result.error || result.status !== 0) fail(`Editor failed: ${result.error?.message ?? result.status}`)
-    const value = parse(readFileSync(file, 'utf8'), { comments: true }) as Task
-    if (!value || typeof value !== 'object' || Array.isArray(value) || value.id !== task.id) fail('Editor must preserve task ID')
-    writeTask(project, value)
-    return value
+    const value = parse(readFileSync(file, 'utf8'), { comments: true })
+    if (!value || typeof value !== 'object' || Array.isArray(value) || 'id' in value) fail('Editor must edit task fields, not its directory ID')
+    const candidate = { ...value, id: task.id } as Task
+    writeTask(project, candidate)
+    return candidate
   } finally { rmSync(dir, { recursive: true, force: true }) }
 }
 function removeTask(project: Project, id: string, force: boolean): void {
@@ -95,10 +97,10 @@ function removeTask(project: Project, id: string, force: boolean): void {
   const entries = readdirSync(dir)
   if (!entries.includes('task.ason')) fail('Task record is missing')
   if (!force && entries.some(e => e !== 'task.ason')) fail(`Task ${id} has artifacts; use --force`)
-  // Validate every nested entry before deletion, and remove symlinks as links, never their targets.
+  // Refuse the entire deletion if any nested entry could escape the task directory.
   const inspect = (path: string): void => {
     const stat = lstatSync(path)
-    if (stat.isSymbolicLink()) return
+    if (stat.isSymbolicLink()) fail(`symlink found: ${path}`)
     if (stat.isDirectory()) for (const name of readdirSync(path)) inspect(join(path, name))
     else if (!stat.isFile()) fail(`Unsafe artifact: ${path}`)
   }
@@ -149,7 +151,8 @@ export function run(argv: string[] = process.argv.slice(2), cwd = process.cwd())
     return formatRecord(task, format, project)
   }
   if (command === 'add-note') {
-    if (args.length !== 2 || !args[1]?.trim() || /[\r\n]/.test(args[1])) fail('Usage: tsk add-note <id> <single-line text>')
+    if (args.length !== 2) fail('usage: tsk add-note <id> <text>')
+    if (!args[1]?.trim()) fail('text must be non-empty')
     const current = getTask(project, args[0]!)
     const task = {...current, notes:[...(current.notes ?? []), args[1]! ]}
     writeTask(project, task)

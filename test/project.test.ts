@@ -53,9 +53,9 @@ describe('project discovery and validation', () => {
 		writeFileSync(join(root, 'tasks', 'a', 'task.ason'), definition("needs: ['z'],"))
 		expect(() => loadProject(root)).toThrow(/unknown task z/)
 	})
-	test('rejects done tasks whose prerequisite chain is planned; permits already-done once', () => {
+	test('loads historical done tasks with planned prerequisites; done transitions remain guarded', () => {
 		const root = repo({ a: definition(), b: "{ title: 'B', spec: 'B', status: 'done', needs: ['a'] }" })
-		expect(() => loadProject(root)).toThrow(/prerequisite a is planned/)
+		expect(loadProject(root).tasks.get('b')?.status).toBe('done')
 		writeFileSync(join(root, 'tasks', 'b', 'task.ason'), "{ title: 'B', spec: 'B', status: 'done', once: true, needs: ['a'] }")
 		expect(loadProject(root).tasks.get('b')?.status).toBe('done')
 	})
@@ -93,10 +93,10 @@ describe('task persistence', () => {
 		expect(() => writeTask(project, { ...getTask(project, 'b'), status: 'done' })).toThrow(/prerequisite a is planned/)
 		expect(getTask(project, 'b').status).toBe('planned')
 	})
-	test('new done once task still requires completed prerequisite chain', () => {
+	test('historical done tasks may be created without changing prerequisite statuses', () => {
 		const project = loadProject(repo({ a: definition() }))
-		expect(() => createTask(project, { title: 'New', spec: 'Spec', once: true, status: 'done', needs: ['a'] })).toThrow(/cannot be done/)
-		expect(project.tasks.size).toBe(1)
+		const done = createTask(project, { title: 'Historical', spec: 'Spec', once: true, status: 'done', needs: ['a'] })
+		expect(done.status).toBe('done')
 		const task = createTask(project, { title: 'New', spec: 'Spec', status: 'planned', needs: ['a'] })
 		expect(task.id).toMatch(/^[0-9a-hjkmnp-tv-z]+$/)
 		expect(loadProject(project.root).tasks.has(task.id)).toBe(true)
