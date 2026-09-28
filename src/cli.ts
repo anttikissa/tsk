@@ -15,7 +15,7 @@ Usage: tsk <command> [options]
 
 Commands:
   init    Create tasks/ at the nearest Git root
-  add     Add a task: --title <text> --description <text>
+  add     Add a task: --title <text> --spec <text>
           [--status planned|done] [--needs <id>]... [--fold-into <id>]...
   ls      List all tasks (ID, title, status, needs)
   ready   List planned tasks whose dependencies are done
@@ -26,7 +26,7 @@ Commands:
   version Print the installed Tsk version
   help    Show this usage guide
 
-Task records: title, description, status, needs; optional once, notes, foldInto.
+Task records: title, spec, status, needs; optional once, notes, foldInto.
 Project: tasks/README.md, project.ason (optional keep), task artifact files.
 Use tsk add-note to append notes; edit once in task.ason.
 Run tsk <command> --help for command usage and examples.
@@ -43,7 +43,7 @@ Project layout:
 
 Task fields in task.ason (ASON object):
   title        Required non-empty string: short task name
-  description  Required non-empty string: intended behavior and constraints
+  spec         Required non-empty string: intended behavior and constraints
   status       Required 'planned' or 'done'; in-progress work stays uncommitted
   needs        Required list of task IDs; prerequisites must be done first
   once         Optional boolean; once: true keeps a done task done on reset
@@ -52,7 +52,7 @@ Task fields in task.ason (ASON object):
                not a dependency or an automatic status/ready rule
 
 Example task.ason:
-  { title: 'Add search', description: 'Search tasks by title.',
+  { title: 'Add search', spec: 'Search tasks by title.',
     status: 'planned', needs: [], notes: ['Check Unicode matching.'] }
 
 Project marker fields:
@@ -72,7 +72,7 @@ entries when rebuilding. See tsk <command> --help for command examples.`
 
 const COMMAND_HELP: Record<string, string> = {
   init: `Usage: tsk init\nCreate tasks/ and a project marker at the nearest Git root.\nOptions: --help\nExample: tsk init`,
-  add: `Usage: tsk add --title <text> --description <text> [--status planned|done] [--needs <id>]... [--fold-into <id>]...\nCreate a task. Repeat --needs and --fold-into for multiple IDs; foldInto is advisory rewrite guidance, not a dependency.\nOptions: --title, --description, --status, --needs, --fold-into, --help\nExample: tsk add --title 'Write tests' --description 'Cover search' --needs r --fold-into r`,
+  add: `Usage: tsk add --title <text> --spec <text> [--status planned|done] [--needs <id>]... [--fold-into <id>]...\nCreate a task. Repeat --needs and --fold-into for multiple IDs; foldInto is advisory rewrite guidance, not a dependency.\nOptions: --title, --spec, --status, --needs, --fold-into, --help\nExample: tsk add --title 'Write tests' --spec 'Cover search' --needs r --fold-into r`,
   ls: `Usage: tsk ls\nList task IDs, titles, statuses and dependencies in ASON.\nOptions: --help\nExample: tsk ls`,
   ready: `Usage: tsk ready\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --help\nExample: tsk ready`,
   show: `Usage: tsk show <id>\nShow a task's fields, dependencies, dependents and artifact paths.\nOptions: --help\nExample: tsk show r`,
@@ -145,17 +145,17 @@ const commands: Record<string, Command> = {
 		noArgs('ready', args)
 		const { tasks } = loadProject(cwd)
 		const ready = sortedTasks(tasks).filter((task) => task.status === 'planned' && !unfinishedPrerequisites(tasks, task.id).length)
-		print(ready.map(({ id, title, description, status, needs }) => ({ id, title, description, status, needs })))
+		print(ready.map(({ id, title, spec, status, needs }) => ({ id, title, spec, status, needs })))
 	},
 
 	show(args, cwd) {
 		const project = loadProject(cwd)
 		const task = getTask(project, oneId('show', args))
-		const { id, title, description, status, once, notes, foldInto } = task
+		const { id, title, spec, status, once, notes, foldInto } = task
 		print({
 			id,
 			title,
-			description,
+			spec,
 			status,
 			...(once !== undefined && { once }),
 			...(notes !== undefined && { notes }),

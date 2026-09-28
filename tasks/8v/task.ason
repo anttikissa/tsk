@@ -1,6 +1,6 @@
 {
 	title: 'Set up trusted publishing for future npm releases',
-	description: 'Set up token-free npm trusted publishing from GitHub Actions using OIDC after the first manual release. Document npm-side setup and verify the workflow on a future release.',
+	spec: 'Set up token-free npm trusted publishing from GitHub Actions using OIDC after the first manual release. Document npm-side setup and verify the workflow on a future release.',
 	status: 'done',
 	once: true,
 	notes: [

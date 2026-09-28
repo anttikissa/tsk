@@ -31,7 +31,7 @@ export function makeRepo(tasks: Record<string, string> = {}): string {
 }
 
 export function task(status: 'planned' | 'done', needs: string[] = [], extra = ''): string {
-	return `{ title: 'T', description: 'D', status: '${status}', ${extra} needs: [${needs.map((n) => `'${n}'`).join(', ')}] }\n`
+	return `{ title: 'T', spec: 'D', status: '${status}', ${extra} needs: [${needs.map((n) => `'${n}'`).join(', ')}] }\n`
 }
 
 export function tsk(cwd: string, ...args: string[]) {

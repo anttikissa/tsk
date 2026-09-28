@@ -19,14 +19,14 @@ test('ready waits for a planned prerequisite behind a done one-off', async () =>
 			['c', 'planned', "['b']", ''],
 		]) {
 			await mkdir(join(root, 'tasks', id))
-			await writeFile(join(root, 'tasks', id, 'task.ason'), `{ title: '${id}', description: '${id}', status: '${status}', ${once} needs: ${needs} }`)
+			await writeFile(join(root, 'tasks', id, 'task.ason'), `{ title: '${id}', spec: '${id}', status: '${status}', ${once} needs: ${needs} }`)
 		}
 		const ready = () => Bun.spawnSync([run, 'ready'], { cwd: root })
 		const blocked = ready()
 		expect(blocked.exitCode).toBe(0)
 		expect(blocked.stdout.toString()).toContain("id: 'a'")
 		expect(blocked.stdout.toString()).not.toContain("id: 'c'")
-		await writeFile(join(root, 'tasks', 'a', 'task.ason'), "{ title: 'a', description: 'a', status: 'done', needs: [] }")
+		await writeFile(join(root, 'tasks', 'a', 'task.ason'), "{ title: 'a', spec: 'a', status: 'done', needs: [] }")
 		const unblocked = ready()
 		expect(unblocked.exitCode).toBe(0)
 		expect(unblocked.stdout.toString()).toContain("id: 'c'")

@@ -9,7 +9,7 @@ test('finds the Git root from a nested directory and loads tasks', () => {
 	mkdirSync(join(root, 'src', 'deep'), { recursive: true })
 	const project = loadProject(join(root, 'src', 'deep'))
 	expect(project.root).toBe(root)
-	expect(project.tasks.get('b')).toEqual({ id: 'b', title: 'T', description: 'D', status: 'planned', once: true, notes: ['n'], needs: ['a'] })
+	expect(project.tasks.get('b')).toEqual({ id: 'b', title: 'T', spec: 'D', status: 'planned', once: true, notes: ['n'], needs: ['a'] })
 })
 
 test('refuses to adopt an unrelated tasks/ directory', () => {
@@ -29,11 +29,14 @@ test('requires a Git repository and a tasks/ directory', () => {
 })
 
 test.each([
-	[{ a: "{ title: 'T', description: 'D', status: 'started', needs: [] }" }, /status/],
-	[{ a: "{ title: 'T', description: 'D', status: 'done', needs: 'b' }" }, /needs/],
+	[{ a: "{ title: 'T', spec: 'D', status: 'started', needs: [] }" }, /status/],
+	[{ a: "{ title: 'T', spec: 'D', status: 'done', needs: 'b' }" }, /needs/],
 	[{ a: task('done', [], 'once: 1,') }, /once/],
 	[{ a: task('done', [], 'notes: [1],') }, /notes/],
-	[{ a: "{ description: 'D', status: 'done', needs: [] }" }, /title/],
+	[{ a: "{ spec: 'D', status: 'done', needs: [] }" }, /title/],
+	[{ a: "{ title: 'T', description: 'D', status: 'done', needs: [] }" }, /unknown field description/],
+	[{ a: "{ title: 'T', status: 'done', needs: [] }" }, /spec/],
+	[{ a: "{ title: 'T', spec: '', status: 'done', needs: [] }" }, /spec/],
 	[{ a: task('done', [], 'extra: 1,') }, /unknown field extra/],
 	[{ a: '{ title: ' }, /malformed ASON in .*a.task\.ason/],
 	[{ a: task('done', ['x']) }, /a needs unknown task x/],

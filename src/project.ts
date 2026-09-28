@@ -11,7 +11,7 @@ export type Status = 'planned' | 'done'
 
 export type TaskRecord = {
 	title: string
-	description: string
+	spec: string
 	status: Status
 	once?: boolean
 	notes?: string[]
@@ -29,7 +29,7 @@ export type Project = {
 
 export const ID_RE = /^[0-9a-hjkmnp-tv-z]+$/
 const STATUSES: Status[] = ['planned', 'done']
-const FIELDS = ['title', 'description', 'status', 'once', 'notes', 'needs', 'foldInto']
+const FIELDS = ['title', 'spec', 'status', 'once', 'notes', 'needs', 'foldInto']
 
 /** The nearest directory at or above `cwd` containing `.git`. */
 export function findGitRoot(cwd: string): string {
@@ -93,16 +93,16 @@ export function validateRecord(value: AsonValue, where: string): TaskRecord {
 	if (typeof value !== 'object' || value === null || Array.isArray(value)) bad('expected an object')
 	const record = value as Record<string, AsonValue>
 	for (const key of Object.keys(record)) if (!FIELDS.includes(key)) bad(`unknown field ${key}`)
-	const { title, description, status, once, notes, needs, foldInto } = record
+	const { title, spec, status, once, notes, needs, foldInto } = record
 	if (typeof title !== 'string' || !title.trim()) bad('title must be a non-empty string')
-	if (typeof description !== 'string' || !description.trim()) bad('description must be a non-empty string')
+	if (typeof spec !== 'string' || !spec.trim()) bad('spec must be a non-empty string')
 	if (!STATUSES.includes(status as Status)) bad(`status must be 'planned' or 'done', got ${stringify(status)}`)
 	if (once !== undefined && typeof once !== 'boolean') bad('once must be a boolean')
 	const isStrings = (v: AsonValue) => Array.isArray(v) && v.every((s) => typeof s === 'string')
 	if (notes !== undefined && !isStrings(notes)) bad('notes must be a list of strings')
 	if (!isStrings(needs)) bad('needs must be a list of task IDs')
 	if (foldInto !== undefined && !isStrings(foldInto)) bad('foldInto must be a list of task IDs')
-	const result: TaskRecord = { title: title as string, description: description as string, status: status as Status, needs: [...(needs as string[])] }
+	const result: TaskRecord = { title: title as string, spec: spec as string, status: status as Status, needs: [...(needs as string[])] }
 	if (once !== undefined) result.once = once as boolean
 	if (notes !== undefined) result.notes = [...(notes as string[])]
 	if (foldInto !== undefined) result.foldInto = [...(foldInto as string[])]
@@ -111,8 +111,8 @@ export function validateRecord(value: AsonValue, where: string): TaskRecord {
 
 /** Fields in the canonical task.ason order. */
 export function orderRecord(task: TaskRecord): TaskRecord {
-	const { title, description, status, once, notes, needs, foldInto } = task
-	return { title, description, status, ...(once !== undefined && { once }), ...(notes !== undefined && { notes }), needs, ...(foldInto !== undefined && { foldInto }) }
+	const { title, spec, status, once, notes, needs, foldInto } = task
+	return { title, spec, status, ...(once !== undefined && { once }), ...(notes !== undefined && { notes }), needs, ...(foldInto !== undefined && { foldInto }) }
 }
 
 function checkDependencies(tasks: Map<string, Task>): void {

@@ -1,6 +1,6 @@
 {
 	title: 'Publish initial npm release (0.1.0)',
-	description: 'Manually publish @anttikissa/tsk@0.1.0 after the initial changelog. Verify the package contents and installed CLI, then tag the release. Keep credentials out of Git; mark this task done only after publication.',
+	spec: 'Manually publish @anttikissa/tsk@0.1.0 after the initial changelog. Verify the package contents and installed CLI, then tag the release. Keep credentials out of Git; mark this task done only after publication.',
 	status: 'done',
 	once: true,
 	notes: [

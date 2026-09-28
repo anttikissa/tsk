@@ -1,6 +1,6 @@
 {
 	title: 'Discoverable help for all Tsk features',
-	description: 'Top-level help (tsk, tsk help, tsk --help, tsk -h) advertises all commands and features, including notes, and points to tsk --detailed-help. That option explains the full task and project structure, every supported field, artifacts, and the rebuild workflow with concise examples. tsk <command> --help gives command-specific usage, options, and examples. Help does not run commands or require a Tsk project.',
+	spec: 'Top-level help (tsk, tsk help, tsk --help, tsk -h) advertises all commands and features, including notes, and points to tsk --detailed-help. That option explains the full task and project structure, every supported field, artifacts, and the rebuild workflow with concise examples. tsk <command> --help gives command-specific usage, options, and examples. Help does not run commands or require a Tsk project.',
 	status: 'done',
 	needs: ['77'],
 	foldInto: ['77']

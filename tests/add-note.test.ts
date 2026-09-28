@@ -17,12 +17,12 @@ test('add-note initializes notes and appends to planned and done tasks', () => {
 })
 
 test('add-note preserves supported comments and other task fields', () => {
-	const root = makeRepo({ a: "{\n\t// Keep this comment\n\ttitle: 'Task',\n\tdescription: 'Requirement',\n\tstatus: 'done',\n\t// Keep the notes comment\n\tnotes: [\n\t\t// Keep the first entry comment\n\t\t'Previous'\n\t],\n\tneeds: []\n}\n" })
+	const root = makeRepo({ a: "{\n\t// Keep this comment\n\ttitle: 'Task',\n\tspec: 'Requirement',\n\tstatus: 'done',\n\t// Keep the notes comment\n\tnotes: [\n\t\t// Keep the first entry comment\n\t\t'Previous'\n\t],\n\tneeds: []\n}\n" })
 	const result = tsk(root, 'add-note', 'a', 'New note')
 	expect(result.code).toBe(0)
 	const source = readFileSync(join(root, 'tasks', 'a', 'task.ason'), 'utf8')
 	for (const comment of ['// Keep this comment', '// Keep the notes comment', '// Keep the first entry comment']) expect(source).toContain(comment)
-	expect(parse(source)).toMatchObject({ title: 'Task', description: 'Requirement', status: 'done', needs: [], notes: ['Previous', 'New note'] })
+	expect(parse(source)).toMatchObject({ title: 'Task', spec: 'Requirement', status: 'done', needs: [], notes: ['Previous', 'New note'] })
 })
 
 test.each([

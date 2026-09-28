@@ -8,7 +8,7 @@ When documenting things, don't provide needless examples of incorrect usage. Wro
 
 When releasing version X.Y.Z, update package.json and CHANGELOG.md in a commit with the subject `Release vX.Y.Z`. Tag that exact commit `vX.Y.Z`; push the tag only when publishing is authorized, since pushing it triggers publication.
 
-When adding tasks, keep descriptions concise: specify the behavior and important constraints, not implementation or test minutiae.
+When adding tasks, keep specs concise: specify the behavior and important constraints, not implementation or test minutiae.
 
 When changing a file, keep the task that defines its behavior in sync with the change. If the change affects dependent tasks, update their specifications and files as needed. When that would cause a large cascade, create a new task that depends on the affected work and explicitly describes the change instead. In either case, the tasks must remain sufficient to rebuild the intended result.
 

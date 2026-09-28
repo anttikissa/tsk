@@ -7,12 +7,12 @@ test('done marks a ready task done and prints it', () => {
 	const root = makeRepo({ a: task('done'), b: task('planned', ['a'], "notes: ['n'],") })
 	const { code, out } = tsk(root, 'done', 'b')
 	expect(code).toBe(0)
-	expect(out).toBe("{\n\tid: 'b',\n\ttitle: 'T',\n\tdescription: 'D',\n\tstatus: 'done',\n\tnotes: ['n'],\n\tneeds: ['a']\n}\n")
-	expect(readFileSync(join(root, 'tasks', 'b', 'task.ason'), 'utf8')).toBe("{ title: 'T', description: 'D', status: 'done', notes: ['n'], needs: ['a'] }\n")
+	expect(out).toBe("{ id: 'b', title: 'T', spec: 'D', status: 'done', notes: ['n'], needs: ['a'] }\n")
+	expect(readFileSync(join(root, 'tasks', 'b', 'task.ason'), 'utf8')).toBe("{ title: 'T', spec: 'D', status: 'done', notes: ['n'], needs: ['a'] }\n")
 })
 
 test('done keeps comments in the task file', () => {
-	const withComment = "{\n\t// Keep me\n\ttitle: 'T',\n\tdescription: 'D',\n\tstatus: 'planned',\n\tneeds: []\n}\n"
+	const withComment = "{\n\t// Keep me\n\ttitle: 'T',\n\tspec: 'D',\n\tstatus: 'planned',\n\tneeds: []\n}\n"
 	const root = makeRepo({ a: withComment })
 	const path = join(root, 'tasks', 'a', 'task.ason')
 	expect(tsk(root, 'done', 'a').code).toBe(0)

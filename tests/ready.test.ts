@@ -11,7 +11,7 @@ test('ready lists planned tasks whose whole dependency chain is done', () => {
 	})
 	const { code, out } = tsk(root, 'ready')
 	expect(code).toBe(0)
-	expect(out).toBe(`[{ id: 'b', title: 'T', description: 'D', status: 'planned', needs: ['a'] }]\n`)
+	expect(out).toBe(`[{ id: 'b', title: 'T', spec: 'D', status: 'planned', needs: ['a'] }]\n`)
 })
 
 test('ready prints [] when nothing is ready', () => {

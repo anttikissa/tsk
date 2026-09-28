@@ -1,7 +1,7 @@
 {
 	title: 'Use spec for task requirements',
-	description: 'Use spec instead of description as the required task field throughout records, commands, output, help, and documentation. Specs state behavior and constraints; reject obsolete description fields.',
-	status: 'planned',
+	spec: 'Use spec instead of description as the required task field throughout records, commands, output, help, and documentation. Specs state behavior and constraints; reject obsolete description fields.',
+	status: 'done',
 	needs: ['d', 'r', '5', '5p', 'p', 'ks', '77'],
 	foldInto: ['d', 'r', '5', '5p', 'p', 'ks', '77']
 }

@@ -24,7 +24,7 @@ test('top-level help advertises all features and detailed help describes every f
 	for (const feature of ['--detailed-help', 'notes', 'once', 'keep', 'foldInto', 'artifacts']) expect(summary.out).toContain(feature)
 	const detailed = tsk(root, '--detailed-help')
 	expect(detailed.code).toBe(0)
-	for (const field of ['title', 'description', 'status', 'needs', 'once', 'notes', 'foldInto', 'format', 'version', 'keep']) {
+	for (const field of ['title', 'spec', 'status', 'needs', 'once', 'notes', 'foldInto', 'format', 'version', 'keep']) {
 		expect(detailed.out).toMatch(new RegExp(`^  ${field} +`, 'm'))
 	}
 	expect(detailed.out).toContain('tasks/<id>/task.ason')

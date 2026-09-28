@@ -21,7 +21,7 @@ while planned tasks remain:
 `tsk` is deliberately minimal. A task lives in `tasks/<id>/` and has:
 
 - a title, such as `Mark a task done`;
-- a description of what to build, such as `tsk done <id> marks a task done when its dependencies are done`;
+- a `spec` for what must be true, such as `tsk done <id> marks a task done when its dependencies are done`;
 - a status (`planned` or `done`);
 - a list of dependencies, such as `['r']`;
 - optionally, `once: true` for one-off work, such as an initial publication. A rebuild keeps completed one-off tasks done instead of repeating them;
@@ -46,7 +46,7 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | Command | What it does |
 | --- | --- |
 | `tsk init` | Create `tasks/` and its project marker at the Git root. |
-| `tsk add --title <text> --description <text> [--needs <id>]... [--fold-into <id>]...` | Add a planned task; repeat `--needs` or `--fold-into` for multiple IDs. Optionally pass `--status done`. |
+| `tsk add --title <text> --spec <text> [--needs <id>]... [--fold-into <id>]...` | Add a planned task; repeat `--needs` or `--fold-into` for multiple IDs. Optionally pass `--status done`. |
 | `tsk add-note <id> <text>` | Append an observation to a planned or done task's notes. |
 | `tsk ls` | List every task's ID, title, status, and dependencies. |
 | `tsk ready` | List planned tasks whose dependencies are all done. |
@@ -57,7 +57,7 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | `tsk help` (or `tsk --help`, `tsk -h`) | Show the current command summary and version. |
 | `tsk --detailed-help` | Show the task format and rebuild workflow in detail. |
 
-Use `tsk <command> --help` for a command's options and examples. For example, `tsk add --title 'Write tests' --description 'Cover the parser' --needs r --needs e` creates a task that depends on both `r` and `e`. Repeat `--needs` once per dependency.
+Use `tsk <command> --help` for a command's options and examples. For example, `tsk add --title 'Write tests' --spec 'Cover the parser' --needs r --needs e` creates a task that depends on both `r` and `e`. Repeat `--needs` once per dependency.
 
 ## Installing
 
@@ -89,7 +89,7 @@ ASON (A Saner Object Notation) is like JSON, but easier to read and edit: it all
 ```ason
 {
   title: 'Write tests',
-  description: 'Cover the parser',
+  spec: 'Cover the parser',
   status: 'planned',
   // Tasks to finish first
   needs: ['r'],

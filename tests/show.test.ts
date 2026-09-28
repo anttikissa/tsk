@@ -16,7 +16,7 @@ test('show prints the task with direct dependencies and dependents', () => {
 	expect(out).toBe(`{
 	id: 'b',
 	title: 'T',
-	description: 'D',
+	spec: 'D',
 	status: 'planned',
 	once: true,
 	notes: ['first', 'second'],

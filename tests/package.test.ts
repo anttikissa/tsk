@@ -51,8 +51,8 @@ function exercise(tsk: string, env: Record<string, string>) {
 	expect(run('--version')).toBe(`tsk ${version}\n`)
 	expect(run('help')).toContain('Usage: tsk <command>')
 	expect(run('init')).toContain(join(repo, 'tasks'))
-	const first = run('add', '--title', 'First', '--description', 'Do it').match(/id: '(\w+)'/)![1]!
-	const second = run('add', '--title', 'Second', '--description', 'Then this', '--needs', first).match(/id: '(\w+)'/)![1]!
+	const first = run('add', '--title', 'First', '--spec', 'Do it').match(/id: '(\w+)'/)![1]!
+	const second = run('add', '--title', 'Second', '--spec', 'Then this', '--needs', first).match(/id: '(\w+)'/)![1]!
 	expect(run('ready')).toContain(`id: '${first}'`)
 	expect(run('done', first)).toContain("status: 'done'")
 	expect(run('show', second)).toContain(`needs: [{ id: '${first}', title: 'First', status: 'done' }]`)
