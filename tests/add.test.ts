@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { parse, stringify } from '../src/ason.ts'
+import { parse, stringify } from '../tasks/9/ason.ts'
 import { err, json, ok, read, repo, task } from './helpers.ts'
 
 const ID = /^[0-9a-hjkmnp-tv-z]+$/

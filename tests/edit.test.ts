@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { chmodSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parse } from '../src/ason.ts'
+import { parse } from '../tasks/9/ason.ts'
 import { err, ok, read, repo, task, tempDir, tsk } from './helpers.ts'
 
 function fixture(): string {

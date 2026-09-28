@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { parse } from '../src/ason.ts'
+import { parse } from '../tasks/9/ason.ts'
 import { err, ok, read, repo, task } from './helpers.ts'
 
 function fixture(): string {

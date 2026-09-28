@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parse } from '../src/ason.ts'
+import { parse } from '../tasks/9/ason.ts'
 import { ok, read, repo, task } from './helpers.ts'
 
 test('reset returns done tasks to planned except once tasks, keeping everything else', () => {
