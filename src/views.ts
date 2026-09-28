@@ -51,7 +51,7 @@ export function formatSize(bytes: number): string {
 /** One compact line: status, ID, title, counts, a spec excerpt and the spec size, about 80 columns wide. */
 export function taskRow(task: Task, padStatus = false): string {
 	const r = task.record
-	const counts: string[] = []
+	const counts: string[] = r.once ? ['once'] : []
 	if (r.needs.length) counts.push(`needs ${r.needs.join(', ')}`)
 	if (r.notes?.length) counts.push(plural(r.notes.length, 'note'))
 	const files = taskFiles(task.dir).length

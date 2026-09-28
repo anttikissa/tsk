@@ -25,7 +25,7 @@ In the LLM era, software is easy to build and extend, but it's just as easy to p
 `tsk` offers a minimal way to do this: split functionality into tasks linked by dependencies. On a rebuild, fold follow-up requirements into their earlier targets before implementing the remaining tasks:
 
 ```
-tsk reset
+tsk reset    # done tasks become planned; once: true tasks, such as releases, stay done
 while tsk foldable lists tasks:
     pick a task with foldInto targets
     incorporate its requirements and useful notes into each target

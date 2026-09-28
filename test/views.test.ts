@@ -53,6 +53,7 @@ test('show displays links, notes and files; structured output keeps empty lists'
 		expect(human).toContain('files:\n  - b.md\n  - link\n  - sub/z.ts')
 		expect(r.cli('show', 'b').stdout).not.toContain('files')
 		expect(r.cli('show', 'b').stdout).toContain('once: true')
+		expect(r.cli('ls').stdout).toContain('PLANNED task b: B (once; needs a): ')
 		const data = JSON.parse(r.cli('show', 'b', '--format', 'json').stdout)
 		expect(data).toEqual({ id: 'b', title: 'B', spec: 'B spec', status: 'planned', once: true, needs: [{ id: 'a', title: 'A', status: 'done' }], dependents: [], foldInto: ['a'], foldedBy: [], notes: [], files: [] })
 		expect(r.cli('show', 'zz').stderr).toContain('Unknown task ID: zz')

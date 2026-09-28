@@ -1,0 +1,7 @@
+{
+	title: 'Make one-off tasks visible',
+	spec: 'tsk ls rows mark once: true tasks by listing once first in their counts, as in (once; needs m4; 7 notes). The README rebuild algorithm states that tsk reset leaves once: true tasks done, so one-off work such as publishing a release is never repeated in a rebuild.',
+	status: 'done',
+	needs: ['fk', 'd'],
+	foldInto: ['fk', 'd']
+}
