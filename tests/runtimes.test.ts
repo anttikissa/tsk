@@ -22,7 +22,7 @@ function runWith(launcher: string, path: string, cwd: string, ...args: string[])
 
 test('the checkout runs with Node alone', () => {
 	const repo = makeRepo({ a: task('done'), b: task('planned', ['a']) })
-	const result = runWith(RUN, pathWith({ node }), repo, 'ready')
+	const result = runWith(RUN, pathWith({ node }), repo, 'ready', '--format', 'ason')
 	expect(result).toMatchObject({ code: 0, err: '' })
 	expect(result.out).toContain("id: 'b'")
 })
@@ -36,7 +36,7 @@ test('an installed package runs from node_modules with Node alone', () => {
 	expect(built.exitCode).toBe(0)
 	cpSync(output, join(pkg, 'dist'), { recursive: true })
 	const bin = pathWith({ node, tsk: join(pkg, 'run') })
-	const result = runWith(join(bin, 'tsk'), bin, makeRepo({ a: task('planned') }), 'done', 'a')
+	const result = runWith(join(bin, 'tsk'), bin, makeRepo({ a: task('planned') }), 'done', 'a', '--format', 'ason')
 	expect(result).toMatchObject({ code: 0, err: '' })
 	expect(result.out).toContain("status: 'done'")
 })

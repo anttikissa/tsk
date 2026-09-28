@@ -28,7 +28,7 @@ test('npm-installed tsk runs from node_modules without Bun', () => {
 		mkdirSync(join(repo, '.git'), { recursive: true })
 		const tsk = join(dir, 'prefix', 'bin', 'tsk')
 		sh([tsk, 'init'], repo, { PATH: bin, HOME: dir })
-		expect(sh([tsk, 'ls'], repo, { PATH: bin, HOME: dir })).toBe('[]\n')
+		expect(sh([tsk, 'ls', '--format', 'ason'], repo, { PATH: bin, HOME: dir })).toBe('[]\n')
 	} finally {
 		rmSync(dir, { recursive: true, force: true })
 	}

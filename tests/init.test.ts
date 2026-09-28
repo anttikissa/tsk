@@ -14,7 +14,7 @@ test('init creates tasks/ at the Git root from a subdirectory', () => {
 	mkdirSync(join(root, 'src'))
 	const { code, out } = tsk(join(root, 'src'), 'init')
 	expect(code).toBe(0)
-	expect(out).toBe(`Created ${realpathSync(join(root, 'tasks'))}\n`)
+	expect(out).toBe(`{ tasksDir: '${realpathSync(join(root, 'tasks'))}' }\n`)
 	expect(readdirSync(join(root, 'tasks')).sort()).toEqual(['README.md', 'project.ason'])
 	expect(readFileSync(join(root, 'tasks', 'project.ason'), 'utf8')).toBe("{ format: 'tsk', version: 1 }\n")
 	expect(tsk(root, 'ls').out).toBe('[]\n')

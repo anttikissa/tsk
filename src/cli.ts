@@ -33,6 +33,7 @@ Commands:
 Task records: title, spec, status, needs; optional once, notes, foldInto.
 Project: tasks/README.md, project.ason (optional keep), task artifact files.
 Use tsk edit <id> to update task fields with flags or VISUAL/EDITOR; use tsk add-note for notes.
+Commands default to concise human-readable output. Use --format json or --format ason for structured output.
 Run tsk <command> --help for command usage and examples.
 Run tsk --detailed-help for the full task format and rebuild guide.`
 
@@ -75,25 +76,45 @@ reset changes statuses, not artifacts or other files. Respect project keep
 entries when rebuilding. See tsk <command> --help for command examples.`
 
 const COMMAND_HELP: Record<string, string> = {
-  init: `Usage: tsk init\nCreate tasks/ and a project marker at the nearest Git root.\nOptions: --help\nExample: tsk init`,
-  add: `Usage: tsk add --title <text> --spec <text> [--status planned|done] [--needs <id>]... [--fold-into <id>]...\nCreate a task. Repeat --needs and --fold-into for multiple IDs; foldInto is advisory rewrite guidance, not a dependency.\nOptions: --title, --spec, --status, --needs, --fold-into, --help\nExample: tsk add --title 'Write tests' --spec 'Cover search' --needs r --fold-into r`,
-  ls: `Usage: tsk ls\nList task IDs, titles, statuses and dependencies in ASON.\nOptions: --help\nExample: tsk ls`,
-  ready: `Usage: tsk ready\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --help\nExample: tsk ready`,
-  show: `Usage: tsk show <id>\nShow a task's fields, dependencies, dependents and artifact paths.\nOptions: --help\nExample: tsk show r`,
-	edit: `Usage: tsk edit <id> [--title <text>] [--spec <text>] [--status planned|done] [--once true|false] [--needs <id>]... [--fold-into <id>]...\nWith no update flags, open VISUAL, EDITOR, or vi. Repeat list flags to replace lists.\nOptions: --title, --spec, --status, --once, --needs, --fold-into, --help\nExample: tsk edit r --title 'New title' --needs a`,
-  'add-note': `Usage: tsk add-note <id> <text>\nAppend a non-empty note to a planned or done task, creating notes if absent.\nOptions: --help\nExample: tsk add-note r 'Check error messages'`,
-  done: `Usage: tsk done <id>\nMark a task done when all its prerequisites are done.\nOptions: --help\nExample: tsk done r`,
-  reset: `Usage: tsk reset\nSet done tasks back to planned, except completed once: true tasks. Other task fields and artifacts remain unchanged.\nOptions: --help\nExample: tsk reset`,
-  version: `Usage: tsk version\nPrint the installed version (also tsk --version).\nOptions: --help\nExample: tsk version`,
-  help: `Usage: tsk help\nShow the top-level feature and command summary (also tsk, tsk --help, or tsk -h). Use tsk --detailed-help for the full format.\nOptions: --help\nExample: tsk help`,
-	del: `Usage: tsk del <id> [--force]\nDelete a task with no incoming needs or foldInto references. Refuse artifacts unless --force is explicit.\nOptions: --force, --help\nExample: tsk del r --force`,
+	init: `Usage: tsk init [--format json|ason]\nCreate tasks/ and a project marker at the nearest Git root.\nOptions: --format, --help\nExample: tsk init`,
+ add: `Usage: tsk add --title <text> --spec <text> [--status planned|done] [--needs <id>]... [--fold-into <id>]... [--format json|ason]\nCreate a task. Repeat --needs and --fold-into for multiple IDs; foldInto is advisory rewrite guidance, not a dependency.\nOptions: --title, --spec, --status, --needs, --fold-into, --format, --help\nExample: tsk add --title 'Write tests' --spec 'Cover search' --needs r`,
+ ls: `Usage: tsk ls [--format json|ason]\nList task IDs, titles, statuses and dependencies.\nOptions: --format, --help\nExample: tsk ls --format json`,
+ ready: `Usage: tsk ready [--format json|ason]\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --format, --help\nExample: tsk ready --format ason`,
+ show: `Usage: tsk show <id> [--format json|ason]\nShow a task's fields, dependencies, dependents and artifact paths.\nOptions: --format, --help\nExample: tsk show r --format json`,
+ edit: `Usage: tsk edit <id> [--title <text>] [--spec <text>] [--status planned|done] [--once true|false] [--needs <id>]... [--fold-into <id>]... [--format json|ason]\nWith no update flags, open VISUAL, EDITOR, or vi. Repeat list flags to replace lists.\nOptions: --title, --spec, --status, --once, --needs, --fold-into, --format, --help\nExample: tsk edit r --title 'New title' --needs a`,
+ 'add-note': `Usage: tsk add-note <id> <text> [--format json|ason]\nAppend a non-empty note to a planned or done task, creating notes if absent.\nOptions: --format, --help\nExample: tsk add-note r 'Check error messages'`,
+ done: `Usage: tsk done <id> [--format json|ason]\nMark a task done when all its prerequisites are done.\nOptions: --format, --help\nExample: tsk done r`,
+ reset: `Usage: tsk reset [--format json|ason]\nSet done tasks back to planned, except completed once: true tasks.\nOptions: --format, --help\nExample: tsk reset`,
+ version: `Usage: tsk version\nPrint the installed version (also tsk --version).\nOptions: --help\nExample: tsk version`,
+ help: `Usage: tsk help\nShow the top-level feature and command summary (also tsk, tsk --help, or tsk -h). Use tsk --detailed-help for the full format.\nOptions: --help\nExample: tsk help`,
+ del: `Usage: tsk del <id> [--force] [--format json|ason]\nDelete a task with no incoming needs or foldInto references. Refuse artifacts unless --force is explicit.\nOptions: --force, --format, --help\nExample: tsk del r --force`,
+}
+
+type OutputFormat = 'human' | 'json' | 'ason'
+let outputFormat: OutputFormat = 'human'
+
+function human(value: unknown): string {
+	if (Array.isArray(value)) {
+		if (!value.length) return 'No results.'
+		return value.map((item, index) => `${index + 1}. ${human(item).replaceAll('\n', '\n   ')}`).join('\n')
+	}
+	if (value && typeof value === 'object') {
+		return Object.entries(value).map(([key, item]) => {
+			if (Array.isArray(item)) return `${key}: ${item.length ? item.map((entry) => typeof entry === 'object' ? `\n${human(entry).replaceAll('\n', '\n  ')}` : String(entry)).join(', ') : '(none)'}`
+			if (item && typeof item === 'object') return `${key}:\n${human(item).replaceAll('\n', '\n  ')}`
+			return `${key}: ${String(item)}`
+		}).join('\n')
+	}
+	return String(value)
+}
+
+function print(value: unknown): void {
+	if (outputFormat === 'json') console.log(JSON.stringify(value, null, 2))
+	else if (outputFormat === 'ason') console.log(stringify(value))
+	else console.log(human(value))
 }
 
 type Command = (args: string[], cwd: string) => void | Promise<void>
-
-function print(value: unknown): void {
-	console.log(stringify(value))
-}
 
 function sortedTasks(tasks: Map<string, Task>): Task[] {
 	return [...tasks.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -254,7 +275,9 @@ const commands: Record<string, Command> = {
 
 	init(args, cwd) {
 		noArgs('init', args)
-		console.log(`Created ${init(cwd)}`)
+		const tasksDir = init(cwd)
+		if (outputFormat === 'human') console.log(`Created ${tasksDir}`)
+		else print({ tasksDir })
 	},
 
 	ls(args, cwd) {
@@ -333,21 +356,36 @@ function setStatus(tasksDir: string, id: string, status: Task['status']): void {
 }
 
 export async function main(args: string[], cwd = process.cwd()): Promise<number> {
-	const [given, ...rest] = args
+	const [given, ...initial] = args
 	const aliases: Record<string, string> = { '--help': 'help', '-h': 'help', '--version': 'version' }
 	const name = given === undefined ? 'help' : (aliases[given] ?? given)
 	const command = Object.hasOwn(commands, name) ? commands[name] : undefined
 	try {
 		if (given === '--detailed-help') {
-			noArgs('--detailed-help', rest)
+			noArgs('--detailed-help', initial)
 			console.log(DETAILED_HELP)
 			return 0
 		}
 		if (!command) throw new TskError(`unknown command: ${name}; run tsk help for usage`)
-		if (given !== undefined && !Object.hasOwn(aliases, given) && rest.some((arg) => arg === '--help' || arg === '-h')) {
+		if (given !== undefined && !Object.hasOwn(aliases, given) && initial.some((arg) => arg === '--help' || arg === '-h')) {
 			console.log(COMMAND_HELP[name])
 			return 0
 		}
+		let format: OutputFormat = 'human'
+		const rest: string[] = []
+		let specified = false
+		for (let i = 0; i < initial.length; i++) {
+			const arg = initial[i]!
+			if (arg !== '--format') { rest.push(arg); continue }
+			if (specified) throw new TskError('--format may be given only once')
+			specified = true
+			const value = initial[++i]
+			if (value === undefined || value.startsWith('--')) throw new TskError('--format requires a value (json or ason)')
+			if (value !== 'json' && value !== 'ason') throw new TskError(`unknown format '${value}'; expected json or ason`)
+			format = value
+		}
+		if (['help', 'version'].includes(name) && specified) throw new TskError(`${name} does not support --format`)
+		outputFormat = format
 		await command(rest, cwd)
 		return 0
 	} catch (error) {

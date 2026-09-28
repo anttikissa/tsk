@@ -47,7 +47,10 @@ afterAll(() => rmSync(sandbox, { recursive: true, force: true }))
 function exercise(tsk: string, env: Record<string, string>) {
 	const repo = tempDir('tsk-repo-')
 	sh(['git', 'init', '-q'], repo, env)
-	const run = (...args: string[]) => sh([tsk, ...args], repo, env)
+	const run = (...args: string[]) => {
+		const command = args[0]
+		return sh([tsk, ...args, ...(['init', 'add', 'del', 'ls', 'ready', 'show', 'edit', 'add-note', 'done', 'reset'].includes(command ?? '') ? ['--format', 'ason'] : [])], repo, env)
+	}
 	expect(run('--version')).toBe(`tsk ${version}\n`)
 	expect(run('help')).toContain('Usage: tsk <command>')
 	expect(run('init')).toContain(join(repo, 'tasks'))

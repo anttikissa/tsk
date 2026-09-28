@@ -35,6 +35,14 @@ export function task(status: 'planned' | 'done', needs: string[] = [], extra = '
 }
 
 export function tsk(cwd: string, ...args: string[]) {
+	// Existing behavior assertions are about task data, so request the stable structured format.
+	if (['init', 'add', 'del', 'ls', 'ready', 'show', 'edit', 'add-note', 'done', 'reset'].includes(args[0] ?? '') && !args.includes('--format')) args.push('--format', 'ason')
+	const result = Bun.spawnSync([RUN, ...args], { cwd })
+	return { code: result.exitCode, out: result.stdout.toString(), err: result.stderr.toString() }
+}
+
+
+export function tskHuman(cwd: string, ...args: string[]) {
 	const result = Bun.spawnSync([RUN, ...args], { cwd })
 	return { code: result.exitCode, out: result.stdout.toString(), err: result.stderr.toString() }
 }

@@ -1,7 +1,7 @@
 {
 	title: 'Human-readable CLI output with opt-in formats',
-	spec: 'Task commands print concise human-readable output by default. Commands with structured results accept --format json or --format ason for machine-readable output with the same task information; format errors are reported clearly. Keep help and documentation aligned with the default.',
-	status: 'planned',
+	spec: 'Task commands print concise human-readable output by default. Commands returning data accept --format json or --format ason with the same information as their ASON result, including task notes, dependencies, and artifact paths. Format errors go to stderr with no structured stdout; help and documentation describe the defaults.',
+	status: 'done',
 	needs: ['mt', 'wd'],
 	foldInto: ['5', 'fk', 'p', '5p', 'ks', 'pf', 'mt']
 }

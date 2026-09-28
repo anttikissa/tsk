@@ -58,6 +58,8 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | `tsk help` (or `tsk --help`, `tsk -h`) | Show the current command summary and version. |
 | `tsk --detailed-help` | Show the task format and rebuild workflow in detail. |
 
+Task commands print concise human-readable output by default. Commands that return task data accept `--format json` or `--format ason` to print the same structured information in JSON or ASON. For example, `tsk show r --format json` includes the task's notes, links, and artifact paths. Format errors are reported on stderr, leaving structured stdout clean.
+
 Use `tsk <command> --help` for a command's options and examples. For example, `tsk add --title 'Write tests' --spec 'Cover the parser' --needs r --needs e` creates a task that depends on both `r` and `e`. Repeat `--needs` once per dependency.
 
 ## Installing
