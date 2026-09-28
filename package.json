@@ -16,7 +16,8 @@
   },
   "files": ["run", "dist/*.js", "src/*.ts", "README.md", "CHANGELOG.md", "LICENSE"],
   "engines": {
-    "bun": ">=1.2"
+    "bun": ">=1.2",
+    "node": ">=22.18"
   },
   "publishConfig": {
     "access": "public"
