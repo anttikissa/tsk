@@ -2,12 +2,11 @@
 
 ## Unreleased
 
-- Replaced `description` with `spec` throughout task records and CLI output. Existing task records using `description` must be updated.
-- Added `tsk edit`, `tsk add-note`, and guarded `tsk del` commands for updating tasks and deleting unreferenced tasks through the CLI.
-- Added `tsk ls` filters and opt-in full specs, notes, and incoming `foldInto` links. Task summaries include note counts and spec lengths; `tsk show` includes incoming fold links.
-- Added `tsk tree` to visualize prerequisites and dependents, with branch connectors for shared paths and separate `foldInto` annotations. JSON and ASON formats expose the graph's nodes and edges.
-- Human-readable output is now the default; use `--format json` or `--format ason` for structured data. `ls`, `add`, and `del` use compact task rows; `show` and `add-note` omit empty sections; `reset` reports counts.
-- Renamed the structured `tsk show` field `artifacts` to `files`. Consumers of the structured output must use `files`.
+- Replaced `description` with `spec` throughout task records and CLI output.
+- Added `tsk edit`, `tsk add-note`, and guarded `tsk del` commands.
+- Added `tsk ls` filters and opt-in full specs, notes, and incoming `foldInto` links.
+- Added `tsk tree` to visualize prerequisites and dependents.
+- Human-readable output is now the default; use `--format ason` or `--format json` for structured data. Renamed `artifacts` to `files`.
 - Value-taking options accept both `--option value` and `--option=value` forms.
 - Added an optional 1,000- and 10,000-task graph benchmark for task lookup, ID generation, and listing.
 
