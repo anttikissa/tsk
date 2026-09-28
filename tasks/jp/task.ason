@@ -1,0 +1,6 @@
+{
+	title: 'List tasks available for folding',
+	spec: 'tsk foldable lists every task with a nonempty foldInto list, sorted by ID, without changing tasks or requiring completed prerequisites. Print full task records in structured JSON/ASON and concise human output, using [] when none; include the command in help.',
+	status: 'planned',
+	needs: ['wd', 'ec']
+}
