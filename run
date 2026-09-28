@@ -1,4 +1,13 @@
 #!/bin/sh
-# The only Tsk launcher.
-dir=$(cd "$(dirname "$0")" && pwd -P) || exit 1
+# The only Tsk launcher, used from the checkout, by ./install and by the
+# installed package. Resolve symlinks to find the real package directory.
+self=$0
+while [ -L "$self" ]; do
+	link=$(readlink "$self")
+	case $link in
+		/*) self=$link ;;
+		*) self=$(dirname "$self")/$link ;;
+	esac
+done
+dir=$(cd "$(dirname "$self")" && pwd -P) || exit 1
 exec bun "$dir/src/cli.ts" "$@"
