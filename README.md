@@ -74,6 +74,10 @@ For development from a clone (Bun or Node.js ≥22.18):
 - `./install` installs dependencies and links `tsk` into `~/.local/bin`
 - or invoke the checkout directly via `./run <command>`
 
+## Scale benchmark
+
+Run the optional 1,000- and 10,000-task graph benchmark with `bun run benchmark:scale`. It creates isolated temporary Git/task fixtures, uses a temporary `HOME`, and removes them on exit. Results report median and p95 for warm lookup, ID claiming, list/ready queries, project loading, and cold CLI startup/list/ready commands. Warm lookup and ID claim should remain below 50 ms; total timings are informational and are not asserted because they vary by machine.
+
 ## Release history
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
