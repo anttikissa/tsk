@@ -1,0 +1,24 @@
+#!/bin/sh
+# One launcher for a checkout, ./install's symlink, and the npm package bin.
+source=$0
+while [ -L "$source" ]; do
+  directory=$(CDPATH= cd -- "$(dirname -- "$source")" && pwd) || exit 1
+  target=$(readlink -- "$source") || exit 1
+  case "$target" in
+    /*) source=$target ;;
+    *) source=$directory/$target ;;
+  esac
+done
+directory=$(CDPATH= cd -- "$(dirname -- "$source")" && pwd) || exit 1
+case "$directory" in
+  */node_modules/*|*/node_modules) entry=$directory/dist/main.js ;;
+  *) entry=$directory/src/main.ts ;;
+esac
+if command -v bun >/dev/null 2>&1; then
+  exec bun "$entry" "$@"
+elif command -v node >/dev/null 2>&1; then
+  exec node "$entry" "$@"
+else
+  echo 'tsk requires Bun or Node.js >=22.18' >&2
+  exit 1
+fi

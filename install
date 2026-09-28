@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if command -v bun >/dev/null 2>&1; then
+  (cd "$root" && bun install)
+elif command -v npm >/dev/null 2>&1; then
+  (cd "$root" && npm install)
+else
+  echo 'Install Bun or Node.js >=22.18 with npm first.' >&2
+  exit 1
+fi
+bin=${HOME:?HOME must be set}/.local/bin
+mkdir -p "$bin"
+if [ -L "$bin/tsk" ]; then
+  if [ "$(readlink -- "$bin/tsk")" != "$root/run" ]; then
+    echo "Refusing to replace $bin/tsk: it does not point to $root/run" >&2
+    exit 1
+  fi
+elif [ -e "$bin/tsk" ]; then
+  echo "Refusing to replace existing $bin/tsk" >&2
+  exit 1
+else
+  ln -s "$root/run" "$bin/tsk"
+fi
+case ":$PATH:" in
+  *":$bin:"*) ;;
+  *) printf 'Add %s to your PATH to run tsk from anywhere.\n' "$bin" ;;
+esac
+printf 'Installed tsk at %s/tsk\n' "$bin"

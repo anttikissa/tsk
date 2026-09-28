@@ -1,6 +1,6 @@
 {
 	title: 'Add a task',
 	spec: 'tsk add --title <text> --spec <text> creates a task in the nearest Tsk project, defaulting to planned with no dependencies. Accept --status done and repeatable --needs <id>. Value options accept either a space or =. Choose a short random lowercase Crockford base32 ID, retry collisions without overwriting files, and use the shortest ID length at which fewer than 25% of possible IDs are taken. Reject missing fields and unknown dependencies; print a compact row with ID in human mode and the task record in structured formats.',
-	status: 'planned',
+	status: 'done',
 	needs: ['r']
 }

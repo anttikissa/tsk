@@ -1,0 +1,33 @@
+{
+  "name": "@anttikissa/tsk",
+  "version": "0.3.0",
+  "description": "A small Git-backed task graph CLI for agents",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "tsk": "./run"
+  },
+  "files": [
+    "run",
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc --project tsconfig.json",
+    "prepack": "npm run build",
+    "bench": "bun scripts/bench.ts"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0"
+  }
+}

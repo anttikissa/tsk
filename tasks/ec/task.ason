@@ -1,7 +1,7 @@
 {
 	title: 'Human-readable CLI output with opt-in formats',
 	spec: 'Task commands default to concise human-readable output: list, add and delete use compact task rows; show and add-note present full details without empty sections; reset reports counts. Data commands accept --format json|ason or --format=json|ason for structured data; other value options also accept a space or =. Errors go to stderr; help and documentation describe the defaults.',
-	status: 'planned',
+	status: 'done',
 	needs: ['mt', 'wd'],
 	foldInto: ['5', 'fk', 'p', '5p', 'ks', 'pf', 'mt']
 }
