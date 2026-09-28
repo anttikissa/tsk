@@ -1,6 +1,6 @@
 {
 	title: 'Ready tasks',
 	spec: 'tsk ready lists planned tasks only when every prerequisite in their dependency chain is done, including behind completed one-off tasks. Include ID, title, spec (not description), status and needs so an agent can choose work; print [] when none are ready in structured formats. Human output shows concise rows by default. Data commands accept --format json|ason (space or =), preserve equivalent structured task data, and print errors to stderr. Benchmark common ready queries on 1,000/10,000-task graphs without machine-specific total-runtime assertions.',
-	status: 'planned',
+	status: 'done',
 	needs: ['r']
 }
