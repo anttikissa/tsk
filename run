@@ -1,0 +1,27 @@
+#!/bin/sh
+# The only Tsk launcher, used from the checkout, by ./install and by the
+# installed package. Resolve symlinks to find the real package directory.
+self=$0
+while [ -L "$self" ]; do
+	link=$(readlink "$self")
+	case $link in
+		/*) self=$link ;;
+		*) self=$(dirname "$self")/$link ;;
+	esac
+done
+dir=$(cd "$(dirname "$self")" && pwd -P) || exit 1
+
+# Node refuses to strip types under node_modules, so installed copies run the
+# compiled JavaScript; a checkout runs the TypeScript sources directly.
+case $dir in
+	*/node_modules/*) entry=$dir/dist/cli.js ;;
+	*) entry=$dir/src/cli.ts ;;
+esac
+
+if command -v bun >/dev/null 2>&1; then
+	exec bun "$entry" "$@"
+elif command -v node >/dev/null 2>&1; then
+	exec node --disable-warning=ExperimentalWarning "$entry" "$@"
+fi
+echo 'tsk: Bun or Node.js is required' >&2
+exit 127
