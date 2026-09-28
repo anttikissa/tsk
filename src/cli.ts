@@ -1,29 +1,14 @@
 #!/usr/bin/env node
 import { randomInt, randomBytes } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { parse, stringify } from './ason.ts'
-import * as projectApi from './project.ts'
-import { gitRoot, isReady, loadProject, readyTasks as projectReadyTasks, saveTask, taskFiles, taskPath, validateTasks, type Project, type Task } from './project.ts'
+import { assertSafeTaskTree, gitRoot, isReady, loadProject, readyTasks as projectReadyTasks, saveTask, taskFiles, taskPath, unfinishedPrerequisites, validateTasks, type Project, type Task } from './project.ts'
 import { fileURLToPath } from 'node:url'
 
 export { projectReadyTasks as readyTasks }
-// Use the project validator when available; retain the same no-symlink guarantee
-// when running this CLI against an older project module during a rolling upgrade.
-function assertSafeTaskTree(project: Project, id: string): void {
-  const check = (projectApi as typeof projectApi & { assertSafeTaskTree?: (project: Project, id: string) => void }).assertSafeTaskTree
-  if (check) return check(project, id)
-  const pending = [dirname(taskPath(project, id))]
-  while (pending.length) {
-    const path = pending.pop()!
-    const stat = lstatSync(path)
-    if (stat.isSymbolicLink()) fail(`symlink found: ${path}`)
-    if (stat.isDirectory()) for (const entry of readdirSync(path)) pending.push(join(path, entry))
-    else if (!stat.isFile()) fail(`not a regular file: ${path}`)
-  }
-}
 type Format = 'human' | 'json' | 'ason'
 type Options = { values: Map<string, string[]>; positional: string[] }
 const alphabet = '0123456789abcdefghjkmnpqrstvwxyz'
@@ -87,7 +72,7 @@ const examples: Record<string, string> = {
   reset: 'tsk reset', version: 'tsk --version', help: 'tsk --detailed-help',
 }
 function fail(message: string): never { throw new Error(message) }
-function parseOptions(argv: string[], allowed: string[], flags: string[] = [], literalText = false): Options {
+function parseOptions(argv: string[], allowed: string[], flags: string[] = [], literalText = false, command = ''): Options {
   const values = new Map<string, string[]>(), positional: string[] = []
   let positionalOnly = false
   for (let i = 0; i < argv.length; i++) {
@@ -97,14 +82,14 @@ function parseOptions(argv: string[], allowed: string[], flags: string[] = [], l
     if (!positionalOnly && arg.startsWith('--')) {
       const eq = arg.indexOf('=')
       const name = eq < 0 ? arg.slice(2) : arg.slice(2, eq)
-      if (!allowed.includes(name) && !flags.includes(name)) fail(`unknown option --${name}`)
+      if (!allowed.includes(name) && !flags.includes(name)) fail(`unknown ${command === 'ls' ? 'ls option:' : 'option'} --${name}`)
       let value: string
       if (flags.includes(name)) {
         if (eq >= 0) fail(`--${name} does not accept a value`)
         value = 'true'
       } else {
         value = eq < 0 ? argv[++i] ?? '' : arg.slice(eq + 1)
-        if (!value || (eq < 0 && value.startsWith('--') && !value.includes('='))) fail(`--${name} requires a value`)
+        if (!value || (eq < 0 && value.startsWith('--') && !value.includes('='))) fail(`--${name} ${name === 'format' || name === 'status' ? 'requires' : 'needs'} a value`)
       }
       values.set(name, [...(values.get(name) ?? []), value])
     } else if (!positionalOnly && arg.startsWith('-')) fail(`unknown option ${arg}`)
@@ -118,7 +103,7 @@ function one(opts: Options, name: string): string | undefined {
   return entries?.[0]
 }
 function count(opts: Options, min: number, max = min, command?: string): void {
-  if (opts.positional.length < min || opts.positional.length > max) fail(command ? `usage: tsk ${usage[command]!.split(' [--format')[0]}` : `Expected ${min === max ? min : `${min}-${max}`} argument(s)`)
+  if (opts.positional.length < min || opts.positional.length > max) fail(command === 'reset' ? 'reset takes no arguments' : command ? `usage: tsk ${usage[command]!.split(' [--format')[0]}` : `Expected ${min === max ? min : `${min}-${max}`} argument(s)`)
 }
 function output(value: unknown, format: Format, human: () => string): void {
   process.stdout.write(format === 'human' ? human() + '\n' : (format === 'json' ? JSON.stringify(value, null, 2) : stringify(value)) + '\n')
@@ -165,7 +150,7 @@ function graphCheck(project: Project, candidate: Task, original?: Task): void {
   const tasks = new Map(project.tasks)
   tasks.set(candidate.id, candidate)
   validateTasks(tasks)
-  if (candidate.status === 'done' && (original?.status !== 'done' || JSON.stringify(original.needs) !== JSON.stringify(candidate.needs))) {
+  if (original && candidate.status === 'done' && (original.status !== 'done' || JSON.stringify(original.needs) !== JSON.stringify(candidate.needs))) {
     const check = { ...candidate, status: 'planned' as const }
     tasks.set(candidate.id, check)
     if (!isReady({ ...project, tasks }, candidate.id)) fail(`Task ${candidate.id} has unfinished prerequisites`)
@@ -301,7 +286,7 @@ export function main(args: string[]): number {
     const opts = parseOptions(argv,
       command === 'add' || command === 'edit' ? allowed : command === 'ls' ? ['format', 'status'] : ['format'],
       command === 'ls' ? ['spec', 'notes', 'folded-by'] : command === 'del' ? ['force'] : [],
-      command === 'add-note',
+      command === 'add-note', command,
     )
     const format = formatOf(opts)
     const project = loadProject()
@@ -311,6 +296,8 @@ export function main(args: string[]): number {
       if (!candidate.title.trim()) fail('--title is required')
       if (!candidate.spec.trim()) fail('--spec is required')
       if (candidate.foldInto) candidate.foldInto = [...new Set(candidate.foldInto)]
+      for (const id of candidate.needs) if (!project.tasks.has(id)) fail(`unknown dependency ${id}`)
+      for (const id of candidate.foldInto ?? []) if (!project.tasks.has(id)) fail(`folds into unknown task ${id}`)
       for (let i = 0; i < 128; i++) {
         const task = { ...candidate, id: generateTaskId(project) }
         graphCheck(project, task)
@@ -322,7 +309,7 @@ export function main(args: string[]): number {
     if (command === 'ready') {
       count(opts, 0, 0, command)
       const ready = projectReadyTasks(project)
-      output(ready.map(record), format, () => ready.map((task) => `${row(project, task)}\n  spec: ${task.spec}${task.needs.length ? `\n  needs ${task.needs.join(', ')}` : ''}`).join('\n') || '[]')
+      output(ready.map(record), format, () => ready.map((task) => `${row(project, task)}\n  spec: ${task.spec}${task.needs.length ? `\n  Needs: ${task.needs.join(', ')}` : ''}`).join('\n') || '[]')
       return 0
     }
     if (command === 'ls') {
@@ -370,9 +357,9 @@ export function main(args: string[]): number {
     const task = requireTask(project, opts.positional[0]!)
     if (command === 'show') { output(detailed(project, task), format, () => full(project, task)); return 0 }
     if (command === 'done') {
-      if (task.status === 'done') fail(`Task ${task.id} is already done`)
-      if (!isReady(project, task.id)) fail(`Task ${task.id} has unfinished prerequisites`)
-      update(project, { ...task, status: 'done' }, format, () => full(project, { ...task, status: 'done' }))
+      if (task.status === 'done') fail(`task ${task.id} is already done`)
+      if (!isReady(project, task.id)) fail(`task ${task.id} has unfinished prerequisites: ${unfinishedPrerequisites(project.tasks, task.id).map((need) => need.id).join(', ')}`)
+      update(project, { ...task, status: 'done' }, format, () => `${full(project, { ...task, status: 'done' })}\n  status: done`)
       return 0
     }
     if (command === 'edit') {
@@ -394,7 +381,8 @@ export function main(args: string[]): number {
     }
     fail(`unknown command: ${command}`)
   } catch (error) {
-    process.stderr.write(`tsk: ${error instanceof Error ? error.message : String(error)}\n`)
+    const message = error instanceof Error ? error.message : String(error)
+    process.stderr.write(`tsk: ${message.replace(/^Dependency cycle:/, 'dependency cycle:')}\n`)
     return 1
   }
 }
