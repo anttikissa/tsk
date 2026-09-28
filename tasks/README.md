@@ -32,6 +32,6 @@ Assert only what a spec states. In particular, do not assert:
 - where a reported dependency cycle starts;
 - help text wording or line wrapping beyond what task `77` and `xf` pin;
 - the order of listed items, unless a spec states it;
-- random IDs, or machine-dependent timings.
+- random IDs, or machine-dependent timings. A test involving randomness must pass for every possible outcome, not just likely ones.
 
 A rebuild is complete when `tasks/crosscheck <pre-rebuild commit>` passes: it runs the old tests against the new build and the new tests against the old build. When it fails, either the specs missed behavior (pin it in the owning task's spec, and in a kept test if it must never drift) or a test asserts unspecified behavior (loosen or delete the test).

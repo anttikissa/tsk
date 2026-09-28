@@ -46,19 +46,19 @@ test('outside Git and without tasks/ report clear errors', () => {
 })
 
 test.each([
-	[{ a: "{ title: 'A', description: 'x', status: 'planned', needs: [] }" }, 'unknown field description'],
-	[{ a: "{ title: 'A', status: 'planned', needs: [] }" }, 'spec is required'],
-	[{ a: task('A', "color: 'red',") }, 'unknown field color'],
+	[{ a: "{ title: 'A', description: 'x', status: 'planned', needs: [] }" }, 'description'],
+	[{ a: "{ title: 'A', status: 'planned', needs: [] }" }, 'spec'],
+	[{ a: task('A', "color: 'red',") }, 'color'],
 	[{ a: task('A', '', 'started') }, 'status'],
 	[{ a: task('A', "once: 'yes',") }, 'once'],
 	[{ a: task('A', 'notes: [1],') }, 'notes'],
-	[{ a: task('A', '', 'planned', ['zz']) }, 'unknown task zz'],
+	[{ a: task('A', '', 'planned', ['zz']) }, 'zz'],
 	[{ a: task('A', '', 'planned', ['b']), b: task('B', '', 'planned', ['a']) }, 'cycle'],
 	[{ a: task('A', "foldInto: ['a'],") }, 'itself'],
 	[{ a: task('A', "foldInto: ['b'],"), b: task('B', 'once: true,') }, 'one-off'],
-	[{ a: task('A', "foldInto: ['b'],"), b: task('B', '', 'planned', ['a']) }, 'cannot fold into downstream task'],
+	[{ a: task('A', "foldInto: ['b'],"), b: task('B', '', 'planned', ['a']) }, 'downstream'],
 	[{ a: '{ title: ' }, 'task.ason'],
-	[{ A: task('A') }, 'not a lowercase Crockford'],
+	[{ A: task('A') }, 'Crockford'],
 ])('rejects invalid records %#', (records, message) => {
 	const out = loads(records as Record<string, string>)
 	expect(out.code).toBe(1)
@@ -79,5 +79,5 @@ test('added IDs use the shortest length where fewer than 25% of IDs are taken', 
 	}
 	expect(added(0)).toMatch(/^[0-9a-hjkmnp-tv-z]$/)
 	expect(added(8)).toMatch(/^[0-9a-hjkmnp-tv-z]{2}$/)
-	for (let i = 0; i < 10; i++) expect(added(7)).toMatch(/^[89a-hjkmnp-tv-z]$/)
+	for (let i = 0; i < 10; i++) expect(added(7)).toMatch(/^[7-9a-hjkmnp-tv-z]$/)
 })
