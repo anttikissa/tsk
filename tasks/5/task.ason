@@ -1,6 +1,6 @@
 {
 	title: 'Add a task',
 	spec: 'tsk add --title <text> --spec <text> creates a planned task without dependencies in the nearest Tsk project. Require spec, not obsolete description; accept --status done, repeatable --needs and --fold-into IDs, and supported once, with value options taking a space or =. Choose a short random lowercase Crockford base32 ID, retry collisions without overwriting, using the shortest length where fewer than 25% of IDs are taken. Reject missing fields and unknown references; print a compact row or structured task record with --format json|ason. tsk edit <id> updates title, spec, status, once, needs and foldInto via flags (repeatable needs/foldInto replace lists), or opens VISUAL/EDITOR (fallback vi) to edit notes too. Preserve unspecified fields, validate the whole graph before replacement, retain originals on failure, and enforce done prerequisites. tsk del <id> removes only a validated directory; refuse incoming references and artifacts without --force, never follow symlinks or remove unrelated paths, and print a DELETED row. Provide reproducible 1,000/10,000-task benchmarks for task lookup, ID creation and common list/ready queries: lookup and ID generation under 50 ms warm; report cold CLI startup and project loading separately without flaky machine-specific total-runtime assertions.',
-	status: 'planned',
+	status: 'done',
 	needs: ['r']
 }
