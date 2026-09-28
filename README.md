@@ -22,14 +22,19 @@ Git repository, providing a recipe for rebuilding the software.
 
 In the LLM era, software is easy to build and extend, but it's just as easy to produce unmaintainable code. Agents also make it easier to rebuild software from scratch: you can start fresh with better guidance, a better harness, or a more capable model.
 
-`tsk` offers a minimal way to do this: split the functionality into tasks linked by dependencies, then turn those tasks into working software by following this loop:
+`tsk` offers a minimal way to do this: split functionality into tasks linked by dependencies. On a rebuild, fold follow-up requirements into their earlier targets before implementing the remaining tasks:
 
 ```
+tsk reset
+while tsk foldable lists tasks:
+    pick a task with foldInto targets
+    incorporate its requirements and useful notes into each target
+    move any files that must survive and update tasks that refer to it
+    delete the folded task
 while planned tasks remain:
-    pick a planned task whose dependencies are all done
+    pick a task whose dependencies are all done
     implement the task
     mark it as done
-    commit
 ```
 
 ## Work with tasks
@@ -55,8 +60,7 @@ tsk add --title 'Document the parser' \
 tsk ready
 ```
 
-Implement a ready task, then mark it done with `tsk done <id>`. Stage the
-implementation and updated task record, and commit them together.
+Implement a ready task, then mark it done with `tsk done <id>`.
 
 Repeat with the next ready task. `tsk` is the interface for creating, browsing,
 and updating tasks; use commands rather than editing task files directly.
@@ -68,6 +72,11 @@ one-off work, which stays done during a rebuild. Optional `foldInto` links
 guide rewrite agents to incorporate a task's requirements into named targets
 instead of implementing it separately on a rebuild. `foldInto` is advisory and
 does not create a dependency; use `--needs` when work must wait for a target.
+`tsk foldable` lists tasks with `foldInto` targets that no other folding task
+targets, regardless of status or prerequisite completion. In a chain
+`C → B → A`, it lists `C` first, then `B` after `C` is deleted. The command
+changes nothing and refuses fold cycles; update references before deleting a
+task.
 
 ## Commands
 
@@ -76,6 +85,7 @@ does not create a dependency; use `--needs` when work must wait for a target.
 | `tsk init` | Create `tasks/` and its project marker at the Git root. |
 | `tsk add --title <text> --spec <text> [--needs <id>]... [--fold-into <id>]...` | Add a planned task. Repeat `--needs` or `--fold-into` for multiple IDs; optionally pass `--status done`. |
 | `tsk ready` | List planned tasks whose dependencies are all done. |
+| `tsk foldable` | List outermost tasks to fold into earlier targets. |
 | `tsk show <id>` | Show a task with its direct dependencies, dependents, incoming fold links, and files. |
 | `tsk done <id>` | Mark a task done when all dependencies are done. |
 | `tsk ls [--status planned|done] [--spec] [--notes] [--folded-by]` | List task summaries; opt in to full specs, notes, or incoming fold links. |

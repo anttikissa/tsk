@@ -1,6 +1,6 @@
 {
 	title: 'Lead README with tasks and the CLI',
-	spec: 'Lead the README with a small task object showing title and spec, then explain why an explicit task plan helps agents rebuild software instead of endlessly patching it. Present the tsk command workflow as the main interface rather than directing people to edit task files. Keep ASON storage information discoverable without making it the product.',
+	spec: 'Lead the README with a small task object showing title and spec, then explain why an explicit task plan helps agents rebuild software instead of endlessly patching it. Present the tsk command workflow as the main interface rather than directing people to edit task files. Show the rebuild order as reset, repeatedly fold tasks from tsk foldable into their targets and delete them, then implement tasks from tsk ready; keep the task algorithm separate from Git checkpoints. Keep ASON storage discoverable without making it the product.',
 	status: 'done',
 	needs: ['ec', '2g'],
 	foldInto: ['d']

@@ -21,6 +21,7 @@ Commands:
   del     Delete an unreferenced task: <id> [--force]
   ls      Browse task summaries: --status, --spec, --notes, --folded-by
   ready   List planned tasks whose dependencies are done
+  foldable List outermost tasks with foldInto targets
   show    Show one task, its links and files: <id>
   tree    Visualize dependency graph: [<id>]
   edit    Edit a task: <id> [--title <text>] [--spec <text>] [--status planned|done]
@@ -50,7 +51,7 @@ Project layout:
 Task fields in task.ason (ASON object):
   title        Required non-empty string: short task name
   spec         Required non-empty string: intended behavior and constraints
-  status       Required 'planned' or 'done'; in-progress work stays uncommitted
+  status       Required 'planned' or 'done'; work in progress stays planned
   needs        Required list of task IDs; prerequisites must be done first
   once         Optional boolean; once: true keeps a done task done on reset
   notes        Optional list of strings recording observations from a build
@@ -67,20 +68,21 @@ Project marker fields:
   keep         Optional list of files to retain during a rebuild; agents use it
 
 Workflow: use tsk add to create tasks, tsk ready to select work, tsk show
-for details and files, and tsk done after implementing and committing.
+for details and files, and tsk done after implementing.
 Use tsk edit <id> with field flags or VISUAL/EDITOR; editor mode also supports notes.
-tsk add --fold-into <id> records rewrite guidance. On a rebuild, agents
-incorporate a folded task's requirements into each target, then mark it done
-without separate work.
-Run tsk reset to return done tasks to planned, except once: true tasks;
-reset changes statuses, not files. Respect project keep
-entries when rebuilding. See tsk <command> --help for command examples.`
+On a rebuild, run tsk reset, then repeatedly take a task from tsk foldable,
+incorporate its requirements into its targets, update references and delete it.
+Foldable tasks appear from the outer end of foldInto chains; cycles are errors.
+When none remain, use tsk ready to select work. Reset changes statuses,
+not files. Respect project keep entries when rebuilding.
+See tsk <command> --help for command examples.`
 
 const COMMAND_HELP: Record<string, string> = {
 	init: `Usage: tsk init [--format json|ason]\nCreate tasks/ and a project marker at the nearest Git root.\nOptions: --format, --help\nExample: tsk init`,
  add: `Usage: tsk add --title <text> --spec <text> [--status planned|done] [--needs <id>]... [--fold-into <id>]... [--format json|ason]\nCreate a task. Repeat --needs and --fold-into for multiple IDs; foldInto is advisory rewrite guidance, not a dependency.\nOptions: --title, --spec, --status, --needs, --fold-into, --format, --help\nExample: tsk add --title 'Write tests' --spec 'Cover search' --needs r`,
  ls: `Usage: tsk ls [--status planned|done] [--spec] [--notes] [--folded-by] [--format json|ason]\nList sorted task summaries; reveal full specs, notes, or incoming fold links on request.\nOptions: --status, --spec, --notes, --folded-by, --format, --help\nExample: tsk ls --status planned --folded-by`,
  ready: `Usage: tsk ready [--format json|ason]\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --format, --help\nExample: tsk ready --format ason`,
+ foldable: `Usage: tsk foldable [--format json|ason]\nList outermost tasks with foldInto targets, independent of status and prerequisites. Refuse foldInto cycles; this query does not change tasks.\nOptions: --format, --help\nExample: tsk foldable --format ason`,
  show: `Usage: tsk show <id> [--format json|ason]\nShow a task's fields, dependencies, dependents, incoming fold links and files.\nOptions: --format, --help\nExample: tsk show r --format json`,
  tree: `Usage: tsk tree [<id>] [--format json|ason]\nShow dependencies from prerequisites toward tasks that need them. With an ID, show that task and its downstream dependents. Repeated nodes say which parent also needs them and are expanded only once; foldInto annotations are not dependency edges.\nOptions: --format, --help\nExample: tsk tree r`,
  edit: `Usage: tsk edit <id> [--title <text>] [--spec <text>] [--status planned|done] [--once true|false] [--needs <id>]... [--fold-into <id>]... [--format json|ason]\nWith no update flags, open VISUAL, EDITOR, or vi. Repeat list flags to replace lists.\nOptions: --title, --spec, --status, --once, --needs, --fold-into, --format, --help\nExample: tsk edit r --title 'New title' --needs a`,
@@ -162,6 +164,27 @@ function listRow(task: Task, fileCount: number, extras: string[] = [], width = 8
 	const chars = [...text]
 	const excerpt = chars.length > room ? `${chars.slice(0, Math.max(0, room - 1)).join('')}…` : text
 	return `${prefix}${excerpt}${suffix}`
+}
+
+/** Only sources not targeted by another fold can be incorporated first. */
+function foldableTasks(tasks: Map<string, Task>): Task[] {
+	const sources = sortedTasks(tasks).filter((task) => task.foldInto?.length)
+	const incoming = new Map(sources.map((task) => [task.id, 0]))
+	for (const task of sources) for (const target of task.foldInto!) {
+		if (incoming.has(target)) incoming.set(target, incoming.get(target)! + 1)
+	}
+	const outer = sources.filter((task) => incoming.get(task.id) === 0)
+	const queue = [...outer]
+	for (let i = 0; i < queue.length; i++) {
+		for (const target of queue[i]!.foldInto!) {
+			if (!incoming.has(target)) continue
+			const remaining = incoming.get(target)! - 1
+			incoming.set(target, remaining)
+			if (remaining === 0) queue.push(tasks.get(target)!)
+		}
+	}
+	if (queue.length !== sources.length) throw new TskError('foldInto cycle; fix your graph')
+	return outer
 }
 
 function showHuman(task: Task, project: ReturnType<typeof loadProject>): string {
@@ -474,6 +497,16 @@ const commands: Record<string, Command> = {
 		const { tasks } = loadProject(cwd)
 		const ready = sortedTasks(tasks).filter((task) => task.status === 'planned' && !unfinishedPrerequisites(tasks, task.id).length)
 		print(ready.map(({ id, title, spec, status, needs }) => ({ id, title, spec, status, needs })))
+	},
+
+	foldable(args, cwd) {
+		noArgs('foldable', args)
+		const project = loadProject(cwd)
+		const tasks = foldableTasks(project.tasks)
+		if (outputFormat === 'human') {
+			if (!tasks.length) console.log('No results.')
+			else for (const task of tasks) console.log(listRow(task, artifactFiles(join(project.tasksDir, task.id)).length, [`foldInto → ${task.foldInto!.join(', ')}`]))
+		} else print(tasks)
 	},
 
 	show(args, cwd) {
