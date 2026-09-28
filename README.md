@@ -98,6 +98,15 @@ task.
 | `tsk help` (`tsk --help`, `tsk -h`) | Show the command summary and version. |
 | `tsk --detailed-help` | Show the task format and rebuild workflow in detail. |
 
+Commands that print task data accept `--format json` or `--format ason`. Task
+records keep the order `id`, `title`, `spec`, `status`, `once`, `notes`,
+`needs`, `foldInto`. `tsk show` expands `needs` to `{ id, title, status }` and
+adds `neededBy` (IDs of tasks that need this one), `foldedBy` (IDs of tasks
+that fold into it) and `files`. `tsk tree` prints `{ nodes, dependencies,
+foldInto }`, where the last two are `{ from, to }` edges. `tsk del` prints
+`{ id, deleted: true }`, `tsk reset` the IDs it changed, and `tsk init`
+`{ tasksDir }`.
+
 ## Installing
 
 With Bun or Node.js:

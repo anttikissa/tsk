@@ -44,7 +44,7 @@ export function findGitRoot(start: string): string {
 	while (true) {
 		if (existsSync(join(dir, '.git'))) return dir
 		const parent = dirname(dir)
-		if (parent === dir) throw new TskError(`Not inside a Git repository: ${start}`)
+		if (parent === dir) throw new TskError(`not inside a Git repository: ${start}`)
 		dir = parent
 	}
 }
@@ -60,15 +60,15 @@ function isStringList(value: unknown): value is string[] {
 function readProjectMarker(tasksDir: string): void {
 	const path = join(tasksDir, 'project.ason')
 	const hint = `${tasksDir} is not a Tsk task directory`
-	if (!existsSync(path)) throw new TskError(`${hint} (no project.ason)`)
+	if (!existsSync(path)) throw new TskError(`${hint}: project.ason is missing`)
 	let marker: AsonValue
 	try {
 		marker = parse(readFileSync(path, 'utf8'))
 	} catch (e) {
 		throw new TskError(`${path}: ${(e as Error).message}`)
 	}
-	if (!isObject(marker) || marker.format !== 'tsk') throw new TskError(`${hint} (project.ason does not say format: 'tsk')`)
-	if (marker.version !== 1) throw new TskError(`${path}: unsupported version ${String(marker.version)}; expected 1`)
+	if (!isObject(marker) || marker.format !== 'tsk') throw new TskError(`${path}: does not identify the Tsk format or version`)
+	if (marker.version !== 1) throw new TskError(`${path}: does not identify the Tsk format or version`)
 	for (const key of Object.keys(marker)) {
 		if (!PROJECT_FIELDS.includes(key)) throw new TskError(`${path}: unknown field ${key}`)
 	}
@@ -80,7 +80,7 @@ export function validateRecord(id: string, value: unknown): TaskRecord {
 	const where = `task ${id}`
 	if (!isObject(value)) throw new TskError(`${where}: task.ason must contain an object`)
 	for (const key of Object.keys(value)) {
-		if (key === 'description') throw new TskError(`${where}: description is obsolete; rename it to spec`)
+		if (key === 'description') throw new TskError(`${where}: unknown field description; rename it to spec`)
 		if (!FIELDS.includes(key)) throw new TskError(`${where}: unknown field ${key}`)
 	}
 	if (typeof value.title !== 'string' || !value.title.trim()) throw new TskError(`${where}: title must be a nonempty string`)
@@ -102,8 +102,8 @@ export function validateRecord(id: string, value: unknown): TaskRecord {
 export function validateGraph(records: Map<string, TaskRecord>): void {
 	for (const [id, rec] of records) {
 		for (const need of rec.needs) {
-			if (need === id) throw new TskError(`task ${id}: cannot need itself`)
-			if (!records.has(need)) throw new TskError(`task ${id}: needs unknown task ${need}`)
+			if (need === id) throw new TskError(`task ${id} cannot need itself`)
+			if (!records.has(need)) throw new TskError(`task ${id} needs unknown task ${need}`)
 		}
 	}
 	const state = new Map<string, 'visiting' | 'done'>()
@@ -112,7 +112,7 @@ export function validateGraph(records: Map<string, TaskRecord>): void {
 		if (s === 'done') return
 		if (s === 'visiting') {
 			const cycle = [...path.slice(path.indexOf(id)), id]
-			throw new TskError(`Dependency cycle: ${cycle.join(' -> ')}`)
+			throw new TskError(`dependency cycle: ${cycle.join(' -> ')}`)
 		}
 		state.set(id, 'visiting')
 		path.push(id)
@@ -124,11 +124,11 @@ export function validateGraph(records: Map<string, TaskRecord>): void {
 
 	for (const [id, rec] of records) {
 		for (const target of rec.foldInto ?? []) {
-			if (target === id) throw new TskError(`task ${id}: cannot fold into itself`)
+			if (target === id) throw new TskError(`task ${id} cannot fold into itself`)
 			const t = records.get(target)
-			if (!t) throw new TskError(`task ${id}: foldInto names unknown task ${target}`)
-			if (t.once) throw new TskError(`task ${id}: cannot fold into one-off task ${target}`)
-			if (prerequisites(records, target).has(id)) throw new TskError(`task ${id}: cannot fold into ${target}, which depends on it`)
+			if (!t) throw new TskError(`task ${id} folds into unknown task ${target}`)
+			if (t.once) throw new TskError(`task ${id} cannot fold into one-off task ${target}`)
+			if (prerequisites(records, target).has(id)) throw new TskError(`task ${id} cannot fold into downstream task ${target}`)
 		}
 	}
 }
@@ -199,7 +199,7 @@ export function readRecord(id: string, path: string): TaskRecord {
 	try {
 		value = parse(readFileSync(path, 'utf8'), { comments: true })
 	} catch (e) {
-		throw new TskError(`${path}: ${(e as Error).message}`)
+		throw new TskError(`malformed ASON in ${path}: ${(e as Error).message}`)
 	}
 	try {
 		return validateRecord(id, value)
@@ -212,14 +212,14 @@ export function readRecord(id: string, path: string): TaskRecord {
 export function loadProject(cwd: string): Project {
 	const root = findGitRoot(cwd)
 	const tasksDir = join(root, 'tasks')
-	if (!existsSync(tasksDir)) throw new TskError(`No tasks/ directory at ${root}; run tsk init`)
+	if (!existsSync(tasksDir)) throw new TskError(`no Tsk tasks/ directory at ${root}; run tsk init`)
 	if (!statSync(tasksDir).isDirectory()) throw new TskError(`${tasksDir} is not a directory`)
 	readProjectMarker(tasksDir)
 	const tasks = new Map<string, Task>()
 	for (const entry of readdirSync(tasksDir, { withFileTypes: true })) {
 		if (entry.name.startsWith('.') || !entry.isDirectory()) continue
 		const dir = join(tasksDir, entry.name)
-		if (!isValidId(entry.name)) throw new TskError(`${dir}: directory name is not a valid task ID (lowercase Crockford base32)`)
+		if (!isValidId(entry.name)) throw new TskError(`${entry.name}: not a lowercase Crockford base32 task ID`)
 		const path = join(dir, 'task.ason')
 		if (!existsSync(path)) throw new TskError(`${dir}: missing task.ason`)
 		tasks.set(entry.name, { id: entry.name, dir, record: readRecord(entry.name, path) })
@@ -230,15 +230,23 @@ export function loadProject(cwd: string): Project {
 }
 
 export function getTask(project: Project, id: string | undefined): Task {
-	if (!id) throw new TskError('Missing task ID')
+	if (!id) throw new TskError('missing task ID')
 	const task = project.tasks.get(id)
-	if (!task) throw new TskError(`Unknown task ID: ${id}`)
+	if (!task) throw new TskError(`unknown task: ${id}`)
 	return task
 }
 
 /** Serialize a record, keeping comments that are attached to its fields. */
 export function formatRecord(record: TaskRecord): string {
-	return `${stringify(record)}\n`
+	const ordered = withComments({} as TaskRecord, record)
+	for (const key of FIELDS) if (record[key] !== undefined) ordered[key] = record[key]
+	let text = stringify(ordered)
+	if ((ordered.notes?.length ?? 0) < 2) return `${text}\n`
+	// Two or more notes are written one per line, so the record spans lines too.
+	// A one-line record has no comments, so its fields can be laid out directly.
+	if (!text.includes('\n')) text = `{\n${Object.keys(ordered).map((key) => `\t${key}: ${stringify(ordered[key])}`).join(',\n')}\n}`
+	const long = stringify(ordered.notes, 'long').replaceAll('\n', '\n\t')
+	return `${text.replace(/^\tnotes: \[.*\](,?)$/m, (_, comma: string) => `\tnotes: ${long}${comma}`)}\n`
 }
 
 /** Replace a file atomically via a hidden temporary file in the same directory tree. */

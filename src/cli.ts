@@ -24,8 +24,16 @@ export function main(argv: string[], io: Io & { err: (text: string) => void }): 
 	const [command, ...rest] = argv
 	try {
 		if (command === undefined || command === 'help' || command === '--help' || command === '-h') {
-			const topic = command === 'help' ? rest[0] : undefined
-			if (topic !== undefined && !COMMANDS[topic]) throw new TskError(`Unknown command: ${topic}. Run tsk help.`)
+			const args = command === 'help' ? rest : []
+			if (args.includes('--help') || args.includes('-h')) {
+				io.out(commandHelp('help'))
+				return 0
+			}
+			const option = args.find((arg) => arg.startsWith('-'))
+			if (option) throw new TskError(`unknown option ${option}; see tsk help --help`)
+			if (args.length > 1) throw new TskError('usage: tsk help [<command>]')
+			const topic = args[0]
+			if (topic !== undefined && !COMMANDS[topic]) throw new TskError(`unknown command: ${topic}; run tsk help for usage`)
 			io.out(topic ? commandHelp(topic) : usage())
 			return 0
 		}
@@ -35,11 +43,12 @@ export function main(argv: string[], io: Io & { err: (text: string) => void }): 
 		}
 		if (command === 'version' || command === '--version') {
 			if (rest.includes('--help') || rest.includes('-h')) io.out(commandHelp('version'))
-			else io.out(`${version()}\n`)
+			else if (rest.length) throw new TskError(rest[0]!.startsWith('-') ? `unknown option ${rest[0]}; see tsk version --help` : 'version takes no arguments')
+			else io.out(`tsk ${version()}\n`)
 			return 0
 		}
 		const handler = HANDLERS[command]
-		if (!handler) throw new TskError(`Unknown command: ${command}. Run tsk help.`)
+		if (!handler) throw new TskError(`unknown command: ${command}; run tsk help for usage`)
 		if (rest.includes('--help') || rest.includes('-h')) {
 			io.out(commandHelp(command))
 			return 0

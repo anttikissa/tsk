@@ -7,6 +7,7 @@ export function version(): string {
 	return pkg.version
 }
 
+const HELP = '  --help, -h           Show this help'
 const FORMAT = '  --format json|ason   Print structured data instead of human-readable output'
 
 type CommandHelp = { usage: string; summary: string; options?: string[]; examples: string[] }
@@ -15,6 +16,7 @@ export const COMMANDS: Record<string, CommandHelp> = {
 	init: {
 		usage: 'tsk init',
 		summary: 'Create tasks/, its project.ason marker and a README.md template at the Git root. Never touches an existing tasks/ directory.',
+		options: [FORMAT],
 		examples: ['tsk init'],
 	},
 	add: {
@@ -123,8 +125,9 @@ export const COMMANDS: Record<string, CommandHelp> = {
 }
 
 export function usage(): string {
-	const rows = Object.values(COMMANDS).map((c) => `  ${c.usage.padEnd(46)} ${c.summary.split('. ')[0]!.replace(/\.$/, '')}`)
-	return `tsk ${version()} — a minimal task manager for rebuilding software
+	const rows = Object.entries(COMMANDS).map(([name, c]) => `  ${name.padEnd(10)} ${c.summary.split('. ')[0]!.replace(/\.$/, '')}`)
+	return `tsk ${version()}
+A minimal task manager for rebuilding software.
 
 Usage: tsk <command> [options]
 
@@ -135,15 +138,16 @@ Tasks live in tasks/<id>/task.ason at the Git root. Output is human-readable
 by default; data commands accept --format json or --format ason.
 
 Run tsk <command> --help for a command, or tsk --detailed-help for the task
-format, fields, notes, files, once, foldInto and the rebuild workflow.
+format, fields (notes, once, foldInto), task files, the project keep list and
+the rebuild workflow.
 `
 }
 
 export function commandHelp(name: string): string {
 	const c = COMMANDS[name]!
 	let text = `Usage: ${c.usage}\n\n${c.summary}\n`
-	if (c.options?.length) text += `\nOptions:\n${c.options.join('\n')}\n`
-	text += `\nExamples:\n${c.examples.map((e) => `  ${e}`).join('\n')}\n`
+	text += `\nOptions:\n${[...(c.options ?? []), HELP].join('\n')}\n`
+	text += `\nExample:\n${c.examples.map((e) => `  ${e}`).join('\n')}\n`
 	return text
 }
 
@@ -175,6 +179,17 @@ TASK FIELDS
   foldInto   IDs of earlier targets that should absorb this task on a rebuild;
              advisory only, it adds no dependency and does not affect ready, done
              or reset
+
+PROJECT FIELDS (tasks/project.ason)
+
+  format     'tsk' (required)
+  version    1 (required)
+  keep       Paths relative to the Git root that a rebuild keeps besides .git/
+             and tasks/
+
+Example task.ason:
+
+  { title: 'Cover the parser', spec: 'Tests exercise valid and invalid input', status: 'planned', needs: ['4k'] }
 
 Files in a task directory other than task.ason are listed by tsk show. A planned
 task is ready when every prerequisite in its dependency chain is done, including

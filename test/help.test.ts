@@ -21,17 +21,17 @@ test('detailed and command help', () => {
 	try {
 		const add = r.cli('add', '--help')
 		expect(add.stdout).toContain('Usage: tsk add')
-		expect(add.stdout).toContain('Examples:')
+		expect(add.stdout).toContain('Example:')
 		expect(r.cli('ls').stdout).toContain('task a')
 		expect(r.cli('del', 'a', '--help').stdout).toContain('Usage: tsk del')
 		expect(r.cli('ls').stdout).toContain('task a')
 	} finally {
 		r.cleanup()
 	}
-	expect(tsk('/', ['nope']).stderr).toContain('Unknown command')
+	expect(tsk('/', ['nope']).stderr).toContain('unknown command')
 })
 
 test('version', () => {
-	expect(tsk('/', ['version']).stdout).toBe(`${version}\n`)
-	expect(tsk('/', ['--version']).stdout).toBe(`${version}\n`)
+	expect(tsk('/', ['version']).stdout).toBe(`tsk ${version}\n`)
+	expect(tsk('/', ['--version']).stdout).toBe(`tsk ${version}\n`)
 })

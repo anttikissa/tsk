@@ -37,13 +37,12 @@ test('add creates planned tasks with options in both forms', () => {
 	}
 })
 
-test('add rejects missing fields, obsolete description, unknown references and unmet done', () => {
+test('add rejects missing fields, obsolete description and unknown references', () => {
 	const r = repo({ a: task('A') })
 	try {
 		expect(r.cli('add', '--title', 'B').stderr).toContain('--spec')
 		expect(r.cli('add', '--title', 'B', '--description', 'x').stderr).toContain('--spec')
 		expect(r.cli('add', '--title', 'B', '--spec', 'b', '--needs', 'zz').stderr).toContain('zz')
-		expect(r.cli('add', '--title', 'B', '--spec', 'b', '--needs', 'a', '--status', 'done').code).toBe(1)
 		expect(readdirSync(join(r.root, 'tasks')).sort()).toEqual(['a', 'project.ason'])
 	} finally {
 		r.cleanup()
@@ -54,7 +53,7 @@ test('done enforces the whole prerequisite chain and keeps comments', () => {
 	const r = repo({ a: task('A'), b: task('B', '', 'planned', ['a']), c: `{\n\t// why\n\ttitle: 'C',\n\tspec: 'c',\n\tstatus: 'planned',\n\tneeds: []\n}\n` })
 	try {
 		expect(r.cli('done', 'b').stderr).toContain('a')
-		expect(r.cli('done', 'zz').stderr).toContain('Unknown task')
+		expect(r.cli('done', 'zz').stderr).toContain('unknown task')
 		expect(r.cli('done', 'a').stdout).toStartWith('DONE task a: A')
 		expect(r.cli('done', 'a').stderr).toContain('already done')
 		expect(JSON.parse(r.cli('done', 'b', '--format', 'json').stdout)).toMatchObject({ id: 'b', status: 'done' })
@@ -75,7 +74,7 @@ test('edit updates fields by flags and validates the graph', () => {
 		expect(r.cli('edit', 'b', '--status', 'done').stderr).toContain('unfinished')
 		expect(r.cli('edit', 'a', '--needs', 'b').stderr).toContain('cycle')
 		expect(r.cli('edit', 'b', '--once=false').code).toBe(0)
-		expect(parse(read(r.root, 'b'))).not.toHaveProperty('once')
+		expect(parse(read(r.root, 'b'))).toHaveProperty('once', false)
 		expect(read(r.root, 'a')).toBe(task('A'))
 	} finally {
 		r.cleanup()
@@ -116,13 +115,13 @@ test('add-note appends notes and rejects bad input', () => {
 test('del refuses references, files without --force and symlinks', () => {
 	const r = repo({ a: task('A'), b: task('B', '', 'planned', ['a']), c: task('C', "foldInto: ['a'],"), d: task('D') })
 	try {
-		expect(r.cli('del', 'a').stderr).toContain('b needs it')
+		expect(r.cli('del', 'a').stderr).toContain('needed by b')
 		writeFileSync(join(r.root, 'tasks', 'd', 'notes.md'), 'x')
 		expect(r.cli('del', 'd').stderr).toContain('--force')
 		expect(existsSync(join(r.root, 'tasks', 'd'))).toBe(true)
-		expect(r.cli('del', 'd', '--force').stdout).toBe('DELETED task d: D\n')
+		expect(r.cli('del', 'd', '--force').stdout).toBe('DELETED task d: D (1 file): D spec (6 b)\n')
 		expect(existsSync(join(r.root, 'tasks', 'd'))).toBe(false)
-		expect(r.cli('del', 'c').stdout).toBe('DELETED task c: C\n')
+		expect(r.cli('del', 'c').stdout).toBe('DELETED task c: C: C spec (6 b)\n')
 		symlinkSync(join(r.root, 'tasks'), join(r.root, 'tasks', 'b', 'link'))
 		expect(r.cli('del', 'b', '--force').stderr).toContain('symlink')
 		expect(r.cli('del', '../x').code).toBe(1)

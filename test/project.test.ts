@@ -47,7 +47,7 @@ test('outside Git and without tasks/ report clear errors', () => {
 })
 
 test.each([
-	[{ a: "{ title: 'A', description: 'x', status: 'planned', needs: [] }" }, 'description is obsolete'],
+	[{ a: "{ title: 'A', description: 'x', status: 'planned', needs: [] }" }, 'unknown field description'],
 	[{ a: "{ title: 'A', status: 'planned', needs: [] }" }, 'spec is required'],
 	[{ a: task('A', "color: 'red',") }, 'unknown field color'],
 	[{ a: task('A', '', 'started') }, 'status'],
@@ -57,9 +57,9 @@ test.each([
 	[{ a: task('A', '', 'planned', ['b']), b: task('B', '', 'planned', ['a']) }, 'cycle'],
 	[{ a: task('A', "foldInto: ['a'],") }, 'itself'],
 	[{ a: task('A', "foldInto: ['b'],"), b: task('B', 'once: true,') }, 'one-off'],
-	[{ a: task('A', "foldInto: ['b'],"), b: task('B', '', 'planned', ['a']) }, 'depends on it'],
+	[{ a: task('A', "foldInto: ['b'],"), b: task('B', '', 'planned', ['a']) }, 'cannot fold into downstream task'],
 	[{ a: '{ title: ' }, 'task.ason'],
-	[{ A: task('A') }, 'not a valid task ID'],
+	[{ A: task('A') }, 'not a lowercase Crockford'],
 ])('rejects invalid records %#', (records, message) => {
 	const out = loads(records as Record<string, string>)
 	expect(out.code).toBe(1)

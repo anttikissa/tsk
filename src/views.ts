@@ -29,9 +29,9 @@ export function taskData(task: Task): Record<string, unknown> {
 	const r = task.record
 	const data: Record<string, unknown> = { id: task.id, title: r.title, spec: r.spec, status: r.status }
 	if (r.once !== undefined) data.once = r.once
+	if (r.notes !== undefined) data.notes = [...r.notes]
 	data.needs = [...r.needs]
 	if (r.foldInto !== undefined) data.foldInto = [...r.foldInto]
-	if (r.notes !== undefined) data.notes = [...r.notes]
 	return data
 }
 
@@ -48,19 +48,25 @@ export function formatSize(bytes: number): string {
 	return bytes < 1000 ? `${bytes} b` : `${(bytes / 1000).toFixed(1)} kB`
 }
 
-/** One compact line: status, ID, title, counts, a spec excerpt and the spec size, about 80 columns wide. */
-export function taskRow(task: Task, padStatus = false): string {
+/** Status, ID, title and counts, such as `PLANNED task b: T (needs a; 1 note)`. */
+export function taskHeader(task: Task, padStatus = false): string {
 	const r = task.record
 	const counts: string[] = r.once ? ['once'] : []
 	if (r.needs.length) counts.push(`needs ${r.needs.join(', ')}`)
 	if (r.notes?.length) counts.push(plural(r.notes.length, 'note'))
 	const files = taskFiles(task.dir).length
 	if (files) counts.push(plural(files, 'file'))
-	const head = `${statusLabel(task, padStatus)} task ${task.id}: ${r.title}${counts.length ? ` (${counts.join('; ')})` : ''}: `
+	return `${statusLabel(task, padStatus)} task ${task.id}: ${r.title}${counts.length ? ` (${counts.join('; ')})` : ''}`
+}
+
+/** One compact line: the header, a spec excerpt and the spec size, at most 80 columns wide. */
+export function taskRow(task: Task, padStatus = false): string {
+	const r = task.record
+	const head = `${taskHeader(task, padStatus)}: `
 	const tail = ` (${formatSize(Buffer.byteLength(r.spec))})`
-	const spec = r.spec.replace(/\s+/g, ' ').trim()
-	const room = WIDTH - head.length - tail.length
-	const excerpt = spec.length <= room ? spec : `${spec.slice(0, Math.max(0, room - 1))}…`
+	const spec = [...r.spec.replace(/\s+/g, ' ').trim()]
+	const room = Math.max(0, WIDTH - [...head].length - [...tail].length)
+	const excerpt = spec.length <= room ? spec.join('') : `${spec.slice(0, Math.max(0, room - 1)).join('')}…`
 	return head + excerpt + tail
 }
 
@@ -75,46 +81,28 @@ function indented(text: string, prefix: string, rest: string): string {
 /** Full human-readable details of a task; empty sections are omitted. */
 export function taskDetails(project: Project, task: Task): string {
 	const r = task.record
-	const lines = [`${statusLabel(task)} task ${task.id}: ${r.title}`]
-	if (r.once) lines.push('once: true (stays done across rebuilds)')
-	lines.push(indented(r.spec, 'spec: ', '  '))
-	if (r.needs.length) {
-		lines.push('needs:')
-		for (const id of r.needs) {
-			const dep = project.tasks.get(id)!
-			lines.push(`  ${statusLabel(dep)} ${id}: ${dep.record.title}`)
-		}
-	}
-	const dependents = dependentsOf(project, task.id)
-	if (dependents.length) lines.push(`dependents: ${dependents.join(', ')}`)
-	if (r.foldInto?.length) lines.push(`foldInto: ${r.foldInto.join(', ')}`)
-	const foldedBy = foldedByOf(project, task.id)
-	if (foldedBy.length) lines.push(`foldedBy: ${foldedBy.join(', ')}`)
-	if (r.notes?.length) {
-		lines.push('notes:')
-		for (const note of r.notes) lines.push(indented(note, '  - ', '    '))
-	}
 	const files = taskFiles(task.dir)
-	if (files.length) {
-		lines.push('files:')
-		for (const file of files) lines.push(`  - ${file}`)
-	}
+	const lines = [taskHeader(task), indented(r.spec, '  ', '  ')]
+	if (r.foldInto?.length) lines.push(`  foldInto → ${r.foldInto.join(', ')}`)
+	const neededBy = dependentsOf(project, task.id)
+	if (neededBy.length) lines.push(`  neededBy: ${neededBy.join(', ')}`)
+	const foldedBy = foldedByOf(project, task.id)
+	if (foldedBy.length) lines.push(`  foldedBy: ${foldedBy.join(', ')}`)
+	if (r.notes?.length) lines.push('  notes:', ...r.notes.map((note) => indented(note, '    - ', '      ')))
+	if (files.length) lines.push('  files:', ...files.map((file) => `    - ${file}`))
 	return `${lines.join('\n')}\n`
 }
 
-/** Structured show output; lists are always present. */
+/** Structured show output: the record with expanded needs, then neededBy, foldedBy and files. */
 export function showData(project: Project, task: Task): Record<string, unknown> {
 	const r = task.record
-	const data: Record<string, unknown> = { id: task.id, title: r.title, spec: r.spec, status: r.status }
-	if (r.once !== undefined) data.once = r.once
+	const data = taskData(task)
 	data.needs = r.needs.map((id) => {
 		const dep = project.tasks.get(id)!
 		return { id, title: dep.record.title, status: dep.record.status }
 	})
-	data.dependents = dependentsOf(project, task.id)
-	data.foldInto = [...(r.foldInto ?? [])]
+	data.neededBy = dependentsOf(project, task.id)
 	data.foldedBy = foldedByOf(project, task.id)
-	data.notes = [...(r.notes ?? [])]
 	data.files = taskFiles(task.dir)
 	return data
 }
@@ -128,7 +116,7 @@ export function printTask(io: Io, format: Format, project: Project, task: Task):
 export function show(io: Io, args: string[]): void {
 	const parsed = parseArgs(args, { format: 'string' }, 'show')
 	const format = formatOption(parsed, 'show')
-	const [id] = expectPositionals(parsed, 'show', ['task ID'])
+	const [id] = expectPositionals(parsed, 'show', ['<id>'])
 	const project = loadProject(io.cwd)
 	const task = getTask(project, id)
 	if (format === 'human') io.out(taskDetails(project, task))
@@ -140,7 +128,7 @@ export function ls(io: Io, args: string[]): void {
 	const format = formatOption(parsed, 'ls')
 	expectPositionals(parsed, 'ls', [])
 	const { status } = parsed.options
-	if (status !== undefined && status !== 'planned' && status !== 'done') throw new TskError('tsk ls: --status must be planned or done')
+	if (status !== undefined && status !== 'planned' && status !== 'done') throw new TskError('--status must be planned or done')
 	const project = loadProject(io.cwd)
 	const tasks = sortedIds(project)
 		.map((id) => project.tasks.get(id)!)
@@ -176,8 +164,8 @@ export function ls(io: Io, args: string[]): void {
 	let out = ''
 	for (const t of tasks) {
 		out += `${taskRow(t, pad)}\n`
-		if (withSpec) out += `${indented(t.record.spec, '  spec: ', '    ')}\n`
-		if (withNotes) for (const note of t.record.notes ?? []) out += `${indented(note, '  note: ', '    ')}\n`
+		if (withSpec) out += `${indented(t.record.spec, '  ', '  ')}\n`
+		if (withNotes && t.record.notes?.length) out += `  notes:\n${t.record.notes.map((note) => `${indented(note, '    - ', '      ')}\n`).join('')}`
 		if (withFoldedBy) {
 			const by = foldedByOf(project, t.id)
 			if (by.length) out += `  foldedBy: ${by.join(', ')}\n`
@@ -209,7 +197,7 @@ export function foldableIds(project: Project): string[] {
 		if (state.get(id) === 'done') return
 		if (state.get(id) === 'visiting') {
 			const cycle = [...path.slice(path.indexOf(id)), id]
-			throw new TskError(`foldInto cycle: ${cycle.join(' -> ')}. Fix your graph: remove a foldInto link with tsk edit.`)
+			throw new TskError(`foldInto cycle: ${cycle.join(' -> ')}; fix your graph by removing a foldInto link with tsk edit`)
 		}
 		state.set(id, 'visiting')
 		path.push(id)
@@ -230,13 +218,13 @@ export function foldable(io: Io, args: string[]): void {
 	const tasks = foldableIds(project).map((id) => project.tasks.get(id)!)
 	if (format !== 'human') return emit(io, format, tasks.map(taskData))
 	if (!tasks.length) return io.out('No results.\n')
-	io.out(tasks.map((t) => `${taskRow(t)}\n  foldInto: ${t.record.foldInto!.join(', ')}\n`).join(''))
+	io.out(tasks.map((t) => `${taskRow(t)}\n  foldInto → ${t.record.foldInto!.join(', ')}\n`).join(''))
 }
 
 export function tree(io: Io, args: string[]): void {
 	const parsed = parseArgs(args, { format: 'string' }, 'tree')
 	const format = formatOption(parsed, 'tree')
-	if (parsed.positional.length > 1) throw new TskError(`tsk tree: unexpected argument ${parsed.positional[1]}`)
+	if (parsed.positional.length > 1) throw new TskError('usage: tsk tree [<id>]')
 	const project = loadProject(io.cwd)
 	const start = parsed.positional[0]
 	const roots = start !== undefined ? [getTask(project, start).id] : sortedIds(project).filter((id) => !project.tasks.get(id)!.record.needs.length)
@@ -259,40 +247,33 @@ export function tree(io: Io, args: string[]): void {
 	}
 
 	if (format !== 'human') {
-		const nodes = [...included].sort(compareIds).map((id) => {
-			const t = project.tasks.get(id)!
-			return { id, title: t.record.title, status: t.record.status }
-		})
-		const edges: { from: string; to: string }[] = []
+		const ids = [...included].sort(compareIds)
+		const nodes = ids.map((id) => taskData(project.tasks.get(id)!))
+		const dependencies: { from: string; to: string }[] = []
 		const foldInto: { from: string; to: string }[] = []
-		for (const { id } of nodes) {
-			for (const to of dependents.get(id) ?? []) if (included.has(to)) edges.push({ from: id, to })
-			for (const to of project.tasks.get(id)!.record.foldInto ?? []) foldInto.push({ from: id, to })
+		for (const id of ids) {
+			for (const to of dependents.get(id) ?? []) if (included.has(to)) dependencies.push({ from: id, to })
+			for (const to of project.tasks.get(id)!.record.foldInto ?? []) if (included.has(to)) foldInto.push({ from: id, to })
 		}
-		return emit(io, format, { nodes, edges, foldInto })
+		return emit(io, format, { nodes, dependencies, foldInto })
 	}
 
 	if (!roots.length) return io.out('No tasks.\n')
 	const lines: string[] = []
 	const shown = new Set<string>()
-	const label = (id: string): string => {
-		const t = project.tasks.get(id)!
-		const folds = t.record.foldInto?.length ? ` [folds into ${t.record.foldInto.join(', ')}]` : ''
-		return `${statusLabel(t)} ${id}: ${t.record.title}${folds}`
-	}
-	const draw = (id: string, prefix: string, connector: string, childPrefix: string, parent?: string): void => {
+	// connector is '' for roots, else '├── ' or '└── '; prefix holds the ancestors' guide columns.
+	const draw = (id: string, prefix: string, connector: string, parent: string): void => {
 		if (shown.has(id)) {
-			const t = project.tasks.get(id)!
-			lines.push(`${prefix}${connector}${statusLabel(t)} ${id}: ${t.record.title} (shown above; also needs ${parent})`)
+			lines.push(`${prefix}${connector}${id} (also needs ${parent}; shown above)`)
 			return
 		}
 		shown.add(id)
-		lines.push(`${prefix}${connector}${label(id)}`)
+		const r = project.tasks.get(id)!.record
+		lines.push(`${prefix}${connector}${id} [${r.status}] ${r.title}`)
+		const next = prefix + (connector === '' ? '' : connector === '└── ' ? '    ' : '│   ')
+		if (r.foldInto?.length) lines.push(`${next}${connector ? '' : '    '}foldInto → ${r.foldInto.join(', ')}`)
 		const children = dependents.get(id) ?? []
-		children.forEach((child, i) => {
-			const last = i === children.length - 1
-			draw(child, prefix + childPrefix, last ? '└── ' : '├── ', last ? '    ' : '│   ', id)
-		})
+		children.forEach((child, i) => draw(child, next, i === children.length - 1 ? '└── ' : '├── ', id))
 	}
 	for (const root of roots) draw(root, '', '', '')
 	io.out(`${lines.join('\n')}\n`)

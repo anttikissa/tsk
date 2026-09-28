@@ -18,8 +18,8 @@ test('ls prints compact rows sorted by ID with totals', () => {
 		expect(lines[2]).toBe('1 planned task found, 1 done.')
 		expect(r.cli('ls', '--status=done').stdout).toStartWith('DONE task b')
 		expect(r.cli('ls', '--status', 'nope').code).toBe(1)
-		expect(r.cli('ls', '--status', '--format', 'ason').stderr).toContain('--status needs a value')
-		expect(r.cli('ls', '--notes').stdout).toContain('  note: y')
+		expect(r.cli('ls', '--status', '--format', 'ason').stderr).toContain('--status requires a value')
+		expect(r.cli('ls', '--notes').stdout).toContain('  notes:\n    - x\n    - y')
 	} finally {
 		r.cleanup()
 	}
@@ -48,16 +48,16 @@ test('show displays links, notes and files; structured output keeps empty lists'
 		symlinkSync('/nonexistent', join(r.root, 'tasks', 'a', 'link'))
 		const human = r.cli('show', 'a').stdout
 		expect(human).toContain('DONE task a: A')
-		expect(human).toContain('dependents: b')
+		expect(human).toContain('neededBy: b')
 		expect(human).toContain('foldedBy: b')
-		expect(human).toContain('  - one\n    two')
-		expect(human).toContain('files:\n  - b.md\n  - link\n  - sub/z.ts')
+		expect(human).toContain('    - one\n      two')
+		expect(human).toContain('files:\n    - b.md\n    - link\n    - sub/z.ts')
 		expect(r.cli('show', 'b').stdout).not.toContain('files')
-		expect(r.cli('show', 'b').stdout).toContain('once: true')
+		expect(r.cli('show', 'b').stdout).toContain('PLANNED task b: B (once; needs a)')
 		expect(r.cli('ls').stdout).toContain('PLANNED task b: B (once; needs a): ')
 		const data = JSON.parse(r.cli('show', 'b', '--format', 'json').stdout)
-		expect(data).toEqual({ id: 'b', title: 'B', spec: 'B spec', status: 'planned', once: true, needs: [{ id: 'a', title: 'A', status: 'done' }], dependents: [], foldInto: ['a'], foldedBy: [], notes: [], files: [] })
-		expect(r.cli('show', 'zz').stderr).toContain('Unknown task ID: zz')
+		expect(data).toEqual({ id: 'b', title: 'B', spec: 'B spec', status: 'planned', once: true, needs: [{ id: 'a', title: 'A', status: 'done' }], foldInto: ['a'], neededBy: [], foldedBy: [], files: [] })
+		expect(r.cli('show', 'zz').stderr).toContain('unknown task: zz')
 	} finally {
 		r.cleanup()
 	}
@@ -83,16 +83,16 @@ test('tree draws dependents once and annotates foldInto', () => {
 	const r = repo({ a: task('A'), b: task('B', '', 'planned', ['a']), c: task('C', "foldInto: ['a'],", 'planned', ['a', 'b']) })
 	try {
 		expect(r.cli('tree').stdout).toBe(
-			['PLANNED a: A', '├── PLANNED b: B', '│   └── PLANNED c: C [folds into a]', '└── PLANNED c: C (shown above; also needs a)', ''].join('\n'),
+			['a [planned] A', '├── b [planned] B', '│   └── c [planned] C', '│       foldInto → a', '└── c (also needs a; shown above)', ''].join('\n'),
 		)
-		expect(r.cli('tree', 'b').stdout).toBe('PLANNED b: B\n└── PLANNED c: C [folds into a]\n')
+		expect(r.cli('tree', 'b').stdout).toBe('b [planned] B\n└── c [planned] C\n    foldInto → a\n')
 		expect(parse(r.cli('tree', '--format', 'ason').stdout)).toEqual({
 			nodes: [
-				{ id: 'a', title: 'A', status: 'planned' },
-				{ id: 'b', title: 'B', status: 'planned' },
-				{ id: 'c', title: 'C', status: 'planned' },
+				{ id: 'a', title: 'A', spec: 'A spec', status: 'planned', needs: [] },
+				{ id: 'b', title: 'B', spec: 'B spec', status: 'planned', needs: ['a'] },
+				{ id: 'c', title: 'C', spec: 'C spec', status: 'planned', needs: ['a', 'b'], foldInto: ['a'] },
 			],
-			edges: [
+			dependencies: [
 				{ from: 'a', to: 'b' },
 				{ from: 'a', to: 'c' },
 				{ from: 'b', to: 'c' },
@@ -113,7 +113,7 @@ test('foldable lists the outer end of fold chains and refuses cycles', () => {
 		expect(r.cli('edit', 'a', '--fold-into', 'b').code).toBe(0)
 		const cycle = r.cli('foldable')
 		expect(cycle.code).toBe(1)
-		expect(cycle.stderr).toContain('Fix your graph')
+		expect(cycle.stderr).toContain('fix your graph')
 	} finally {
 		r.cleanup()
 	}

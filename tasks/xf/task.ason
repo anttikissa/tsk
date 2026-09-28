@@ -1,0 +1,20 @@
+{
+	title: 'Pin the CLI contract with a kept test suite',
+	spec: "tests/ is kept across rebuilds (project keep list) and holds the reference CLI suite; a rebuild must pass it without editing it. It fixes what scripts and agents rely on: structured output field names and order (show's neededBy, foldedBy and files; tree's nodes, dependencies and foldInto; del's { id, deleted: true }), the task file layout (canonical field order, two or more notes one per line), exit codes, human layouts and key error phrases. Where it is silent, human wording may vary. Other behavior it pins: tsk --version prints 'tsk X.Y.Z'; init accepts --format and prints { tasksDir }; add --status done does not check prerequisites; repeated --needs and --fold-into are deduplicated; edit --once false writes once: false; add-note takes its text verbatim even when it looks like an option; a value option followed by another --option lacks its value; errors are 'tsk: ' plus a lowercase message on stderr with exit 1; del refuses tasks that other tasks need or fold into, even with --force, which only permits deleting task files.",
+	status: 'done',
+	needs: [
+		'5',
+		'5p',
+		'6',
+		'77',
+		'fk',
+		'ks',
+		'p',
+		'pf',
+		'wd',
+		'jp',
+		're',
+		'r',
+		'16'
+	]
+}

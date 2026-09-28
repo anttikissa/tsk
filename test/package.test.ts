@@ -25,7 +25,7 @@ test('./run works through symlinks from anywhere and forwards exit status', () =
 		const link = join(dir, 'tsk')
 		symlinkSync(join(dir, 'hop'), link)
 		symlinkSync(run, join(dir, 'hop'))
-		expect(sh([link, '--version'], '/')).toBe(`${version}\n`)
+		expect(sh([link, '--version'], '/')).toBe(`tsk ${version}\n`)
 		expect(spawnSync(link, ['nope'], { cwd: '/' }).status).toBe(1)
 	} finally {
 		rmSync(dir, { recursive: true, force: true })
@@ -85,7 +85,7 @@ test('a packed package installs with npm and Bun and runs outside the checkout',
 		const npmEnv = { ...process.env, HOME: home, npm_config_prefix: join(dir, 'npm-prefix'), npm_config_cache: join(dir, 'npm-cache') }
 		sh(['npm', 'install', '-g', tarball], dir, npmEnv)
 		const npmTsk = join(dir, 'npm-prefix', 'bin', 'tsk')
-		expect(sh([npmTsk, '--version'], repo, npmEnv)).toBe(`${version}\n`)
+		expect(sh([npmTsk, '--version'], repo, npmEnv)).toBe(`tsk ${version}\n`)
 		sh([npmTsk, 'init'], repo, npmEnv)
 		sh([npmTsk, 'add', '--title', 'T', '--spec', 'S'], repo, npmEnv)
 
