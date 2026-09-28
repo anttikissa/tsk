@@ -1,7 +1,7 @@
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
 import { randomBytes } from 'node:crypto'
 import { dirname, join, resolve } from 'node:path'
-import { COMMENTS, parse, stringify, type AsonObject, type AsonValue } from './ason.ts'
+import { COMMENTS, MULTILINE, parse, stringify, type AsonArray, type AsonObject, type AsonValue } from './ason.ts'
 
 export type Task = {
 	id: string
@@ -226,6 +226,7 @@ export function saveTask(project: Project, task: Task): void {
 			}
 			output[field] = value
 		}
+		if (task.notes && task.notes.length > 1) (output.notes as AsonArray)[MULTILINE] = true
 		atomicWrite(path, stringify(output) + '\n')
 		project.tasks.set(task.id, task)
 	} catch (error) {
