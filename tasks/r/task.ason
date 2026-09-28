@@ -1,6 +1,6 @@
 {
 	title: 'Project discovery and task loading',
 	spec: 'Find the nearest Git root and load tasks/ only when project.ason identifies Tsk; read flat ID directories and ASON records. Require spec (not obsolete description); validate fields, status, optional boolean once and string-list notes, dependencies, foldInto targets, and cycles with useful errors. Never adopt an unrelated tasks/ directory. tsk edit <id> updates title, spec, status, once, needs and foldInto via flags (space or = values; repeated needs/foldInto replace lists), or opens VISUAL/EDITOR (fallback vi) to edit notes too. Preserve unspecified fields; validate the entire resulting graph before replacing a record, keep the original on invalid input or editor failure, and enforce done prerequisite checks. tsk del <id> removes only the validated directory; refuse incoming needs/foldInto references or artifacts without --force, never follow symlinks or remove unrelated paths, and explain refusals without changes; print a DELETED row. Provide reproducible performance checks for lookup, ID creation and common list/ready queries on 1,000/10,000-task graphs: lookup and ID generation under 50 ms warm, cold CLI startup and loading reported separately, and no flaky machine-specific total-runtime assertions.',
-	status: 'planned',
+	status: 'done',
 	needs: ['9']
 }
