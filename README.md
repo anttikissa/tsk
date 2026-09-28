@@ -52,6 +52,7 @@ Run these commands from anywhere inside a Git repository. Tsk discovers the proj
 | `tsk ls [--status planned|done] [--spec] [--notes] [--folded-by]` | List sorted task summaries with counts and lengths; reveal full specs, notes, or incoming fold links on request. |
 | `tsk ready` | List planned tasks whose dependencies are all done. |
 | `tsk show <id>` | Show a task with its direct dependencies, dependents, incoming fold links, and artifact paths. |
+| `tsk tree [<id>]` | Visualize the dependency DAG from prerequisite roots; an ID limits the view to that task and downstream dependents. Shared branches are shown once, and `foldInto` links are annotated separately. |
 | `tsk done <id>` | Mark a task done, provided all its dependencies are done. |
 | `tsk reset` | Set done tasks back to planned for a rebuild, except `once: true` tasks. |
 | `tsk version` (or `tsk --version`) | Print the installed package version. |

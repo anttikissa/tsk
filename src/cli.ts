@@ -22,6 +22,7 @@ Commands:
   ls      Browse task summaries: --status, --spec, --notes, --folded-by
   ready   List planned tasks whose dependencies are done
   show    Show one task, its links and artifacts: <id>
+  tree    Visualize dependency graph: [<id>]
   edit    Edit a task: <id> [--title <text>] [--spec <text>] [--status planned|done]
           [--once true|false] [--needs <id>]... [--fold-into <id>]...
   add-note Append a note to a task: <id> <text>
@@ -81,6 +82,7 @@ const COMMAND_HELP: Record<string, string> = {
  ls: `Usage: tsk ls [--status planned|done] [--spec] [--notes] [--folded-by] [--format json|ason]\nList sorted task summaries; reveal full specs, notes, or incoming fold links on request.\nOptions: --status, --spec, --notes, --folded-by, --format, --help\nExample: tsk ls --status planned --folded-by`,
  ready: `Usage: tsk ready [--format json|ason]\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --format, --help\nExample: tsk ready --format ason`,
  show: `Usage: tsk show <id> [--format json|ason]\nShow a task's fields, dependencies, dependents, incoming fold links and artifact paths.\nOptions: --format, --help\nExample: tsk show r --format json`,
+ tree: `Usage: tsk tree [<id>] [--format json|ason]\nShow dependency graph from prerequisite roots toward dependents. With an ID, show only that task and downstream dependents. Shared tasks are identified once; foldInto links are annotations, not dependency edges.\nOptions: --format, --help\nExample: tsk tree r`,
  edit: `Usage: tsk edit <id> [--title <text>] [--spec <text>] [--status planned|done] [--once true|false] [--needs <id>]... [--fold-into <id>]... [--format json|ason]\nWith no update flags, open VISUAL, EDITOR, or vi. Repeat list flags to replace lists.\nOptions: --title, --spec, --status, --once, --needs, --fold-into, --format, --help\nExample: tsk edit r --title 'New title' --needs a`,
  'add-note': `Usage: tsk add-note <id> <text> [--format json|ason]\nAppend a non-empty note to a planned or done task, creating notes if absent.\nOptions: --format, --help\nExample: tsk add-note r 'Check error messages'`,
  done: `Usage: tsk done <id> [--format json|ason]\nMark a task done when all its prerequisites are done.\nOptions: --format, --help\nExample: tsk done r`,
@@ -251,7 +253,77 @@ function editTask(args: string[], cwd: string): void {
 	print({ id, ...orderRecord(rest) })
 }
 
+function treeGraph(project: ReturnType<typeof loadProject>, rootId?: string) {
+	const tasks = sortedTasks(project.tasks)
+	const dependents = new Map<string, string[]>()
+	for (const task of tasks) for (const need of task.needs) {
+		const dependentsOfNeed = dependents.get(need) ?? []
+		dependentsOfNeed.push(task.id)
+		dependents.set(need, dependentsOfNeed)
+	}
+	const included = new Set<string>()
+	const visit = (id: string) => {
+		if (included.has(id)) return
+		included.add(id)
+		for (const dependent of dependents.get(id) ?? []) visit(dependent)
+	}
+	if (rootId) { getTask(project, rootId); visit(rootId) }
+	else for (const task of tasks) if (!task.needs.length) visit(task.id)
+	// The loader rejects dependency cycles; this fallback also keeps isolated graph data complete.
+	if (!rootId) for (const task of tasks) visit(task.id)
+	const nodes = tasks.filter((task) => included.has(task.id)).map((task) => ({
+		id: task.id, title: task.title, status: task.status, needs: task.needs,
+		...(task.foldInto !== undefined && { foldInto: task.foldInto }),
+	}))
+	const dependencies = tasks.filter((task) => included.has(task.id)).flatMap((task) => task.needs
+		.filter((id) => included.has(id)).map((id) => ({ from: id, to: task.id })))
+	const foldInto = tasks.filter((task) => included.has(task.id)).flatMap((task) => (task.foldInto ?? [])
+		.map((id) => ({ from: task.id, to: id })))
+	return { nodes, dependencies, foldInto }
+}
+
+function renderTree(graph: ReturnType<typeof treeGraph>): string {
+	if (!graph.nodes.length) return 'No tasks.'
+	const byId = new Map(graph.nodes.map((task) => [task.id, task]))
+	const children = new Map<string, string[]>()
+	for (const edge of graph.dependencies) {
+		const childrenOfNode = children.get(edge.from) ?? []
+		childrenOfNode.push(edge.to)
+		children.set(edge.from, childrenOfNode)
+	}
+	for (const ids of children.values()) ids.sort()
+	const folds = new Map<string, string[]>()
+	for (const edge of graph.foldInto) {
+		const targets = folds.get(edge.from) ?? []
+		targets.push(edge.to)
+		folds.set(edge.from, targets)
+	}
+	const seen = new Set<string>()
+	const lines: string[] = []
+	const draw = (id: string, depth: number) => {
+		const task = byId.get(id)!
+		const indent = '  '.repeat(depth)
+		if (seen.has(id)) { lines.push(`${indent}↳ ${id} (shared)`); return }
+		seen.add(id)
+		lines.push(`${indent}${id} [${task.status}] ${task.title}`)
+		for (const target of (folds.get(id) ?? []).sort()) lines.push(`${indent}  foldInto → ${target}`)
+		for (const child of children.get(id) ?? []) draw(child, depth + 1)
+	}
+	const childIds = new Set(graph.dependencies.map((edge) => edge.to))
+	for (const task of graph.nodes) if (!childIds.has(task.id)) draw(task.id, 0)
+	for (const task of graph.nodes) if (!seen.has(task.id)) draw(task.id, 0)
+	return lines.join('\n')
+}
+
 const commands: Record<string, Command> = {
+	tree(args, cwd) {
+		if (args.length > 1) throw new TskError('usage: tsk tree [<id>]')
+		const project = loadProject(cwd)
+		const graph = treeGraph(project, args[0])
+		if (outputFormat === 'human') console.log(renderTree(graph))
+		else print(graph)
+	},
+
 	help() {
 		console.log(USAGE)
 	},

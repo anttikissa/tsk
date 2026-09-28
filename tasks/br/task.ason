@@ -1,7 +1,7 @@
 {
 	title: 'Visualize the task dependency DAG',
-	spec: 'tsk tree displays the dependency graph as a readable console tree, from prerequisite roots toward dependents. Shared descendants and converging branches remain identifiable without unbounded duplication; a task ID limits the view to that task and its downstream dependents. Annotate foldInto relationships separately so they are not mistaken for dependencies.',
-	status: 'planned',
+	spec: 'tsk tree displays the dependency graph from prerequisite roots toward dependents. A task ID limits the view to that task and downstream dependents. Shared descendants and converging branches remain identifiable without unbounded duplication. Annotate foldInto links separately, not as dependency edges. --format json and --format ason provide the same stable graph data: sorted task nodes, prerequisite-to-dependent edges, and separately listed foldInto edges.',
+	status: 'done',
 	needs: ['ec', 'wd'],
 	foldInto: ['fk', '5p']
 }
