@@ -16,6 +16,20 @@ The title names the work; the spec says what a fresh build must produce and
 records important constraints. Tasks form a dependency graph in the project's
 Git repository, providing a recipe for rebuilding the software.
 
+## Motivation
+
+In the LLM era, software is easy to build and extend, but it's just as easy to produce unmaintainable code. Agents also make it easier to rebuild software from scratch: you can start fresh with better guidance, a better harness, or a more capable model.
+
+`tsk` offers a minimal way to do this: split the functionality into tasks linked by dependencies, then turn those tasks into working software by following this loop:
+
+```
+while planned tasks remain:
+    pick a planned task whose dependencies are all done
+    implement the task
+    mark it as done
+    commit
+```
+
 ## Work with tasks
 
 Run Tsk from anywhere inside a Git repository. It discovers the `tasks/`
