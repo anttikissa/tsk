@@ -2,6 +2,8 @@
 
 Keep committing as you go. Wrap commit messages to 72 columns.
 
+Pull and push constantly (I'm writing this on two separate computers that need to be in sync), set up autorebase and autostash if not already.
+
 When a (and only when) commit marks a task as done, end its commit message with a separate line `Implemented task <id>` (for example, `Implemented task ks`). If you know the LLM model id that aided with implementation, mention that too, like: "Implemented task <id> with openai/gpt-6-sol"
 
 When documenting things, don't provide needless examples of incorrect usage. Wrong: "To add multiple dependencies, use `--needs id1 --needs id2`. Don't use syntax like `--needs=id1,id2`." Right: "To add multiple dependencies, use `--needs id1 --needs id2`."
