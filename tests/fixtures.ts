@@ -11,7 +11,7 @@ export const run = join(checkout, 'run')
 export type Result = { code: number | null; stdout: string; stderr: string }
 
 export function tsk(cwd: string, args: string[], env: Record<string, string> = {}): Result {
-	const r = spawnSync(run, args, { cwd, encoding: 'utf8', env: { ...process.env, ...env } })
+	const r = spawnSync(run, args, { cwd, encoding: 'utf8', maxBuffer: 1 << 28, env: { ...process.env, ...env } })
 	return { code: r.status, stdout: r.stdout, stderr: r.stderr }
 }
 

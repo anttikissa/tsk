@@ -36,7 +36,13 @@ while planned tasks remain:
     pick a task whose dependencies are all done
     implement the task
     mark it as done
+cross-check: run the old build's tests against the new build and the new
+    tests against the old build; fix each failure by pinning the behavior
+    in a spec or by loosening a test that asserts unspecified behavior
 ```
+
+Tsk's own rebuilds finish with `tasks/crosscheck <pre-rebuild commit>`; see
+[tasks/README.md](tasks/README.md#testing) for what its tests may assert.
 
 ## Work with tasks
 

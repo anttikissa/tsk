@@ -15,7 +15,11 @@ test('help lists exactly the commands the CLI accepts', () => {
 	const root = makeRepo()
 	const listed = [...tsk(root, 'help').out.matchAll(/^  ([a-z][a-z-]*) +\S/gm)].map((m) => m[1]!)
 	expect(listed.sort()).toEqual([...COMMANDS].sort())
-	for (const command of listed) expect(tsk(root, command, '--bogus').err).not.toContain('unknown command')
+	for (const command of listed) {
+		const help = tsk(root, command, '--help')
+		expect(help.code).toBe(0)
+		expect(help.out).toContain(`Usage: tsk ${command}`)
+	}
 })
 
 test('top-level help advertises all features and detailed help describes every field', () => {

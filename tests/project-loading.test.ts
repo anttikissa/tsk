@@ -1,8 +1,7 @@
 import { expect, test } from 'bun:test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { generateId, ID_ALPHABET } from '../src/project.ts'
-import { repo, task } from './helpers.ts'
+import { repo, task } from './fixtures.ts'
 
 function loads(records: Record<string, string>) {
 	const r = repo(records)
@@ -17,7 +16,7 @@ test('finds the project from a subdirectory of the Git root', () => {
 	const r = repo({ a: task('A') })
 	try {
 		mkdirSync(join(r.root, 'deep', 'er'), { recursive: true })
-		const out = require('./helpers.ts').tsk(join(r.root, 'deep', 'er'), ['ls', '--format', 'json'])
+		const out = require('./fixtures.ts').tsk(join(r.root, 'deep', 'er'), ['ls', '--format', 'json'])
 		expect(out.code).toBe(0)
 		expect(JSON.parse(out.stdout)[0].id).toBe('a')
 	} finally {
@@ -67,11 +66,18 @@ test.each([
 	expect(out.stderr).toContain(message)
 })
 
-test('ID generation uses the shortest length where fewer than 25% of IDs are taken', () => {
-	expect(generateId([]).length).toBe(1)
-	const eight = ID_ALPHABET.slice(0, 8).split('')
-	expect(generateId(eight).length).toBe(2)
-	expect(generateId(eight.slice(0, 7)).length).toBe(1)
-	for (let i = 0; i < 50; i++) expect(eight.slice(0, 7)).not.toContain(generateId(eight.slice(0, 7)))
-	expect(generateId(['x'])).toMatch(/^[0-9a-hjkmnp-tv-z]+$/)
+test('added IDs use the shortest length where fewer than 25% of IDs are taken', () => {
+	const added = (taken: number) => {
+		const records: Record<string, string> = {}
+		for (const id of '0123456789'.slice(0, taken)) records[id] = task(id)
+		const r = repo(records)
+		try {
+			return JSON.parse(r.cli('add', '--title', 'T', '--spec', 'S', '--format', 'json').stdout).id as string
+		} finally {
+			r.cleanup()
+		}
+	}
+	expect(added(0)).toMatch(/^[0-9a-hjkmnp-tv-z]$/)
+	expect(added(8)).toMatch(/^[0-9a-hjkmnp-tv-z]{2}$/)
+	for (let i = 0; i < 10; i++) expect(added(7)).toMatch(/^[89a-hjkmnp-tv-z]$/)
 })

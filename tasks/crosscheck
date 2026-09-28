@@ -1,0 +1,51 @@
+#!/bin/sh
+# Usage: tasks/crosscheck <old-ref> [<new-checkout>]
+#
+# Cross-checks a rebuild against the build it replaced: runs the old
+# build's tests against the new code and the new build's tests against the
+# old code. Tests are the top-level test/ and tests/ directories; tasks/ comes
+# with the code. A failure means either a spec gap (pin the behavior in a
+# task spec and a test) or a test of unspecified behavior (loosen or delete
+# the test).
+set -eu
+[ $# -ge 1 ] || { echo 'usage: tasks/crosscheck <old-ref> [<new-checkout>]' >&2; exit 2; }
+new=$(cd "${2:-.}" && pwd)
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/tsk-crosscheck-XXXXXX")
+trap 'rm -rf "$tmp"' EXIT
+
+mkdir "$tmp/old" "$tmp/new"
+git -C "$new" archive "$1" | tar -x -C "$tmp/old"
+(cd "$new" && tar -c --exclude=./.git --exclude=./node_modules .) | tar -x -C "$tmp/new"
+
+# checks <code> <tests>: copy of <code> with the test directories of <tests>
+checks() {
+	mkdir "$tmp/$1+$2"
+	(cd "$tmp/$1" && tar -c --exclude=./test --exclude=./tests .) | tar -x -C "$tmp/$1+$2"
+	for dir in test tests; do
+		[ ! -d "$tmp/$2/$dir" ] || cp -R "$tmp/$2/$dir" "$tmp/$1+$2/$dir"
+	done
+	echo "== $2 tests against $1 code"
+	(cd "$tmp/$1+$2" && bun install --silent >/dev/null)
+	code=0
+	(cd "$tmp/$1+$2" && bun test >"$tmp/$1+$2.log" 2>&1) || code=$?
+	grep -E '^\(fail\)|^ *[0-9]+ (pass|fail|errors?)$' "$tmp/$1+$2.log" | awk '!seen[$0]++' || true
+	[ -z "${KEEP_LOGS:-}" ] || cp "$tmp/$1+$2.log" "$KEEP_LOGS/"
+	return $code
+}
+
+status=0
+for side in old new; do
+	# Tests may reach the implementation only through ./run.
+	if grep -rnE "from '\.\./" "$tmp/$side/test" "$tmp/$side/tests" 2>/dev/null | grep -v "from '\.\./tasks/"; then
+		echo "$side tests import the implementation; test through ./run instead" >&2
+		status=1
+	fi
+done
+checks new old || status=1
+checks old new || status=1
+if [ $status -eq 0 ]; then
+	echo 'rebuild succeeded; old and new tests agree 100% that we are ok'
+else
+	echo 'crosscheck failed: pin each gap in a spec or loosen the test' >&2
+fi
+exit $status

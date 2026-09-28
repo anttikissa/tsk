@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { checkout, run } from './helpers.ts'
+import { checkout, run } from './fixtures.ts'
 
 const version = JSON.parse(readFileSync(join(checkout, 'package.json'), 'utf8')).version
 

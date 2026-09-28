@@ -42,7 +42,7 @@ test('del refuses symlinks and leaves their targets untouched', () => {
 	symlinkSync(external, join(root, 'tasks', 'a', 'artifact'))
 	const result = tsk(root, 'del', 'a', '--force')
 	expect(result.code).toBe(1)
-	expect(result.err).toContain('symlink found')
+	expect(result.err).toContain('symlink')
 	expect(existsSync(join(root, 'tasks', 'a', 'task.ason'))).toBe(true)
 	expect(existsSync(external)).toBe(true)
 })

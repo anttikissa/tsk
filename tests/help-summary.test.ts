@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
-import { checkout, repo, tsk } from './helpers.ts'
+import { checkout, repo, tsk } from './fixtures.ts'
 
 const version = JSON.parse(readFileSync(`${checkout}/package.json`, 'utf8')).version
 

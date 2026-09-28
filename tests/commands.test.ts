@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parse } from '../src/ason.ts'
-import { repo, task } from './helpers.ts'
+import { parse } from '../tasks/9/ason.ts'
+import { repo, task } from './fixtures.ts'
 
 const read = (root: string, id: string) => readFileSync(join(root, 'tasks', id, 'task.ason'), 'utf8')
 
@@ -10,7 +10,7 @@ test('init creates tasks/ once and never overwrites', () => {
 	const r = repo()
 	try {
 		mkdirSync(join(r.root, 'sub'))
-		const out = require('./helpers.ts').tsk(join(r.root, 'sub'), ['init'])
+		const out = require('./fixtures.ts').tsk(join(r.root, 'sub'), ['init'])
 		expect(out.code).toBe(0)
 		expect(readdirSync(join(r.root, 'tasks')).sort()).toEqual(['README.md', 'project.ason'])
 		expect(r.cli('ls', '--format', 'ason').stdout).toBe('[]\n')
@@ -86,12 +86,12 @@ test('edit without flags uses the editor and keeps the original on failure', () 
 	try {
 		const script = join(r.root, 'ed.sh')
 		writeFileSync(script, `#!/bin/sh\nsed -i "s/needs: \\[\\]/notes: ['from editor'], needs: []/" "$1"\n`, { mode: 0o755 })
-		expect(require('./helpers.ts').tsk(r.root, ['edit', 'a'], { VISUAL: script }).code).toBe(0)
+		expect(require('./fixtures.ts').tsk(r.root, ['edit', 'a'], { VISUAL: script }).code).toBe(0)
 		expect(parse(read(r.root, 'a'))).toMatchObject({ notes: ['from editor'] })
 		const before = read(r.root, 'a')
-		expect(require('./helpers.ts').tsk(r.root, ['edit', 'a'], { VISUAL: 'false' }).code).toBe(1)
+		expect(require('./fixtures.ts').tsk(r.root, ['edit', 'a'], { VISUAL: 'false' }).code).toBe(1)
 		writeFileSync(script, `#!/bin/sh\necho '{ title: 1 }' > "$1"\n`)
-		expect(require('./helpers.ts').tsk(r.root, ['edit', 'a'], { VISUAL: script }).code).toBe(1)
+		expect(require('./fixtures.ts').tsk(r.root, ['edit', 'a'], { VISUAL: script }).code).toBe(1)
 		expect(read(r.root, 'a')).toBe(before)
 	} finally {
 		r.cleanup()

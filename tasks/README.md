@@ -21,3 +21,17 @@ ASON reads input into values and writes normalized output; it does not preserve 
 Every user-facing CLI command must appear in the help output. Update help when adding or removing a command; the initial `tsk help` behavior is specified by task `77`.
 
 Tsk has one CLI implementation and one public launcher: `./run`. The package's `tsk` bin and the link installed by `./install` both point to that launcher. Keep checkout and installed behavior aligned.
+
+## Testing
+
+Tests live in `tests/` and are rebuilt with the code. They check behavior through `./run`, may use the reference ASON implementation `tasks/9/ason.ts`, and import nothing else from the implementation. Tests stored with tasks (`tasks/*/*.test.ts`) survive rebuilds and pin behavior that must not drift.
+
+Assert only what a spec states. In particular, do not assert:
+
+- error wording: assert the `tsk: ` prefix, exit status 1, empty stdout, unchanged files, and at most a key word naming the problem;
+- where a reported dependency cycle starts;
+- help text wording or line wrapping beyond what task `77` and `xf` pin;
+- the order of listed items, unless a spec states it;
+- random IDs, or machine-dependent timings.
+
+A rebuild is complete when `tasks/crosscheck <pre-rebuild commit>` passes: it runs the old tests against the new build and the new tests against the old build. When it fails, either the specs missed behavior (pin it in the owning task's spec, and in a kept test if it must never drift) or a test asserts unspecified behavior (loosen or delete the test).

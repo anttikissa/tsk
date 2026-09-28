@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test'
 import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parse } from '../src/ason.ts'
-import { repo, task } from './helpers.ts'
+import { parse } from '../tasks/9/ason.ts'
+import { repo, task } from './fixtures.ts'
 
 const long = 'word '.repeat(40).trim()
 
