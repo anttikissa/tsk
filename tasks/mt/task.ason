@@ -1,7 +1,7 @@
 {
 	title: 'Append a note to a task',
 	spec: 'tsk add-note <id> <text> appends a non-empty note to a planned or done task, creating its notes list when absent. Write each note on its own line, preserve supported comments and other fields, reject invalid arguments or unknown tasks, and print the updated record.',
-	status: 'done',
+	status: 'planned',
 	needs: ['ks', '1f'],
 	foldInto: ['ks', '77']
 }

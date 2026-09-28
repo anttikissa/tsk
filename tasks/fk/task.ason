@@ -1,6 +1,6 @@
 {
 	title: 'List tasks',
 	spec: 'tsk ls lists all tasks sorted by ID, showing compact human task rows and a planned/done count or structured task summaries. For an empty project the structured result is []; use tsk show for full details.',
-	status: 'done',
+	status: 'planned',
 	needs: ['r']
 }
