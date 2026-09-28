@@ -1,6 +1,6 @@
 {
 	title: 'Fold follow-up tasks into rebuild targets',
-	spec: 'Support an optional foldInto list of task IDs as guidance for rewrite agents, separate from needs. In the current build the follow-up is ordinary work; on a rebuild the agent incorporates its requirements into every named target rather than implementing it separately. The hint does not change ready, done, or reset behavior. Targets may also be needs (normally they are), but foldInto does not add dependencies. Reject missing, self, one-off, or downstream targets; preserve and show the field in add, show, and reset.',
+	spec: 'Support optional foldInto task IDs as rewrite guidance separate from needs: current-build follow-ups are ordinary work, while on rebuild their requirements belong in each named target, without changing ready, done or reset. Targets may also be needs but links do not create prerequisites; reject missing, self, one-off or downstream targets, and preserve/show links in add, show and reset. Provide tsk del <id> for a validated task directory: refuse if another task needs or folds into it, or if it contains files without --force. Never follow symlinks or remove unrelated paths; explain refusals without changing the project. Successful deletion shows a DELETED row by default or structured data with --format json|ason.',
 	status: 'done',
 	needs: ['5', '5p', 'pf']
 }

@@ -1,6 +1,6 @@
 {
 	title: 'Mark a task done',
-	spec: 'tsk done <id> changes a planned task to done in its task.ason and prints the updated task as ASON. Refuse an unknown ID or a task with any unfinished prerequisite in its dependency chain, including behind completed one-off tasks; fail if the task is already done.',
+	spec: 'tsk done <id> changes a planned task to done in task.ason; refuse unknown or already-done tasks and unfinished prerequisites anywhere in their dependency chain, including behind completed one-off tasks. Apply the same prerequisite checks when tsk edit changes status or the needs of a done task; preserve the original on invalid edits. tsk add-note <id> <text> appends one non-empty note on its own line to planned or done tasks, creating notes when absent, preserving supported comments and other fields, and rejecting invalid arguments or unknown IDs. Default to full human task details including spec (not description) for done and add-note; --format json|ason returns structured task records, with errors on stderr.',
 	status: 'done',
 	needs: ['r']
 }

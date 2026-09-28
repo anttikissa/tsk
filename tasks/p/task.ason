@@ -1,6 +1,6 @@
 {
 	title: 'Ready tasks',
-	spec: 'tsk ready prints an ASON list of planned tasks only when every prerequisite in their dependency chain is done, including behind completed one-off tasks. Include ID, title, spec, status, and needs so an agent can choose work; print [] when none are ready.',
+	spec: 'tsk ready lists planned tasks only when every prerequisite in their dependency chain is done, including behind completed one-off tasks. Include ID, title, spec (not description), status, and needs so an agent can choose work. Default to concise human task rows; --format json|ason returns the same structured data, including [] when empty. Report errors on stderr without contaminating structured stdout.',
 	status: 'done',
 	needs: ['r']
 }

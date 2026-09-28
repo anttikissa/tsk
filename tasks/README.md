@@ -8,6 +8,8 @@ A task has a title, `spec` for intended behavior and constraints, `status: 'plan
 
 Optional `foldInto: ['a']` is guidance for rewrite agents: in the current build the follow-up is ordinary work, while on a rebuild its requirements are incorporated into each named target instead of implemented separately. Targets may also appear in `needs`, but `foldInto` does not add dependencies or affect ready, done, or reset. Targets must exist, cannot be the task itself, a one-off task, or downstream of the task.
 
+Keep completed folded follow-ups as historical records: they represent real work in this build, not one-off tasks, and their dependencies still matter. `tsk reset` will plan them again because `foldInto` does not alter status. On a fresh rebuild, implement their requirements in each target's updated spec; once a folded follow-up's prerequisites are done, mark it done in a commit without separately reimplementing the feature. Do not mark it `once: true` merely to avoid resetting it.
+
 Every task-facing command prints concise human-readable output by default. Commands that return task data also accept `--format json` or `--format ason`; both retain the same structured task information. Errors go to stderr, keeping structured stdout clean.
 
 Specs state what a fresh build must produce; notes record observations from this build. Correct or remove notes that become wrong, useless, or misleading. Delete tasks for behavior no longer wanted rather than leaving them planned. Use `tsk add` to create tasks, `tsk add-note` to append observations, `tsk done` to complete tasks, and `tsk edit` to update task fields through flags or an editor.

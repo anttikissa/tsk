@@ -1,6 +1,6 @@
 {
 	title: 'Versioned task blueprint',
-	spec: 'A Git repository contains a tasks/ directory with a Tsk format marker (project.ason, with an optional keep list of files that survive a rebuild), a freeform README for shared build context, and flat ID directories with ASON task records. Require a spec for intended behavior and constraints; document optional once: true for one-off work that stays done across rebuilds and notes as a list of observations. The initial records describe Tsk itself; they can be read without a working CLI.',
+	spec: 'A Git repository contains tasks/ with a Tsk format marker (project.ason, optionally listing paths kept on rebuild), a shared README, and flat ID directories with ASON task records. Require spec for intended behavior and constraints, not description; document optional once: true for one-off work and notes as observations. Initial records describe Tsk without a working CLI. Lead the project README with a small task object using title and spec, explain the task blueprint for rebuilding software, and present the CLI workflow first while keeping ASON storage discoverable.',
 	status: 'done',
 	needs: []
 }

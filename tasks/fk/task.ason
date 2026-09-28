@@ -1,6 +1,6 @@
 {
 	title: 'List tasks',
-	spec: 'tsk ls lists all tasks sorted by ID, showing compact human task rows and a planned/done count or structured task summaries. For an empty project the structured result is []; use tsk show for full details.',
+	spec: 'tsk ls lists tasks sorted by ID; human rows show status, ID, title, nonempty needs/note/file counts, a roughly 80-column spec excerpt and byte size, plus planned/done totals (pad DONE only alongside planned rows). --status filters with space or =; --spec, --notes and --folded-by reveal full content and incoming fold links. Structured --format json|ason includes ID, title, status, needs, noteCount, Unicode-code-point specLength and requested optional fields; an empty project yields []. Provide tsk tree [<id>] from prerequisite roots toward dependents (or chosen task and downstream), with branch connectors, shared descendants only once and later parent references. Annotate foldInto separately from dependencies; structured tree contains sorted nodes and separate dependency/foldInto edges.',
 	status: 'done',
 	needs: ['r']
 }

@@ -1,6 +1,6 @@
 {
 	title: 'Show a task',
-	spec: 'tsk show <id> displays ID, title, full spec, status, optional once and notes, direct dependencies with ID/title/status, and direct dependent IDs. Human output omits empty sections; structured output includes empty lists. Unknown IDs are reported clearly.',
+	spec: 'tsk show <id> presents ID, title, full spec (not description), status, optional once and notes, dependencies with ID/title/status, dependent IDs, incoming fold links as foldedBy, and files; reject unknown IDs. Omit empty sections in concise human output; --format json|ason retains full data including empty lists. tsk ls sorts tasks by ID, with compact human rows showing status, needs/note/file counts, an approximately 80-column spec excerpt and byte size, plus planned/done totals; --status, --spec, --notes and --folded-by provide filtering and detail. Structured summaries include ID, title, status, needs, noteCount, Unicode-code-point specLength and requested optional fields. tsk tree [<id>] uses branch connectors from prerequisite roots toward dependents (or chosen task and descendants), shows shared descendants once with later parent links, and annotates foldInto separately from dependencies. Structured tree has sorted nodes, dependency edges and distinct foldInto edges.',
 	status: 'done',
 	needs: ['r']
 }

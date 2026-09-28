@@ -1,6 +1,6 @@
 {
 	title: 'Reset tasks for a rebuild',
-	spec: 'tsk reset returns every done task to planned except once: true tasks, preserving comments and all other files. Human output reports the changed count and, when nonzero, the count of once tasks left done; structured output lists changed IDs. Repeating reset changes nothing.',
+	spec: 'tsk reset returns every done task to planned except once: true tasks, preserving supported comments, notes, foldInto and all other files. Default human output reports the changed count and, when nonzero, how many once tasks remain done; --format json|ason lists changed IDs. Repeating reset changes nothing, and errors go to stderr.',
 	status: 'done',
 	needs: ['ks']
 }
