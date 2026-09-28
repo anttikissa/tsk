@@ -177,7 +177,7 @@ const commands: Record<string, Command> = {
 		const record = parse(readFileSync(path, 'utf8'), { comments: true }) as AsonObject
 		if (Array.isArray(record.notes)) record.notes.push(args[1])
 		else record.notes = [args[1]]
-		writeFileSync(path, formatAson(record))
+		writeFileSync(path, formatAson(record, 'long'))
 		const { id, ...rest } = { ...task, notes: [...(task.notes ?? []), args[1]] }
 		print({ id, ...orderRecord(rest) })
 	},

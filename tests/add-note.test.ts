@@ -12,6 +12,8 @@ test('add-note initializes notes and appends to planned and done tasks', () => {
 	const second = tsk(root, 'add-note', 'a', 'Second observation')
 	expect(second.code).toBe(0)
 	expect((parse(tsk(root, 'show', 'a').out) as { notes: string[] }).notes).toEqual(['First observation', 'Second observation'])
+	const source = readFileSync(join(root, 'tasks', 'a', 'task.ason'), 'utf8')
+	expect(source).toMatch(/notes: \[\n\t\t'First observation',\n\t\t'Second observation'\n\t\]/)
 	expect((parse(tsk(root, 'add-note', 'b', 'Next').out) as { notes: string[] }).notes).toEqual(['Earlier', 'Next'])
 	expect((parse(readFileSync(join(root, 'tasks', 'b', 'task.ason'), 'utf8')) as { status: string }).status).toBe('done')
 })

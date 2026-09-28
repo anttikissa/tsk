@@ -2,7 +2,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { parse, stringify, type AsonValue } from './ason.ts'
+import { parse, stringify, type AsonValue, type StringifyMode } from './ason.ts'
 
 /** An error meant for the user: printed without a stack trace. */
 export class TskError extends Error {}
@@ -54,8 +54,8 @@ export function readAson(path: string): AsonValue {
 }
 
 /** Task files are normalized ASON with a trailing newline. */
-export function formatAson(value: unknown): string {
-	return stringify(value) + '\n'
+export function formatAson(value: unknown, mode: StringifyMode = 'smart'): string {
+	return stringify(value, mode) + '\n'
 }
 
 export function isTskMarker(value: AsonValue): boolean {
