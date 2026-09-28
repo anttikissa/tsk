@@ -110,3 +110,19 @@ test('format errors are clear and written to stderr with no stdout', () => {
 		expect(result.err).toContain(message)
 	}
 })
+
+test('equals-form --format works across data commands and rejects missing or repeated values', () => {
+	const root = makeRepo()
+	const added = tskHuman(root, 'add', '--title', 'hello', '--spec', 'helloooo', '--format=ason')
+	expect(added.code).toBe(0)
+	const record = parse(added.out) as { id: string; title: string }
+	expect(record.title).toBe('hello')
+	expect(parse(tskHuman(root, 'ls', '--format=ason').out)).toBeArrayOfSize(1)
+	expect(JSON.parse(tskHuman(root, 'show', record.id, '--format=json').out).id).toBe(record.id)
+	for (const args of [['--format='], ['--format=json', '--format', 'ason'], ['--format', 'json', '--format=ason']]) {
+		const result = tskHuman(root, 'ls', ...args)
+		expect(result.code).toBe(1)
+		expect(result.out).toBe('')
+		expect(result.err).toContain(args.length === 1 ? '--format requires a value' : '--format may be given only once')
+	}
+})

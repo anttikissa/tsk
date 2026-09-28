@@ -34,7 +34,7 @@ Commands:
 Task records: title, spec, status, needs; optional once, notes, foldInto.
 Project: tasks/README.md, project.ason (optional keep), task files.
 Use tsk edit <id> to update task fields with flags or VISUAL/EDITOR; use tsk add-note for notes.
-Commands default to concise human-readable output. Use --format json or --format ason for structured output.
+Commands default to concise human-readable output. Use --format json|ason or --format=json|ason for structured output.
 Run tsk <command> --help for command usage and examples.
 Run tsk --detailed-help for the full task format and rebuild guide.`
 
@@ -536,11 +536,11 @@ export async function main(args: string[], cwd = process.cwd()): Promise<number>
 		let specified = false
 		for (let i = 0; i < initial.length; i++) {
 			const arg = initial[i]!
-			if (arg !== '--format') { rest.push(arg); continue }
+			if (arg !== '--format' && !arg.startsWith('--format=')) { rest.push(arg); continue }
 			if (specified) throw new TskError('--format may be given only once')
 			specified = true
-			const value = initial[++i]
-			if (value === undefined || value.startsWith('--')) throw new TskError('--format requires a value (json or ason)')
+			const value = arg === '--format' ? initial[++i] : arg.slice('--format='.length)
+			if (value === undefined || value === '' || value.startsWith('--')) throw new TskError('--format requires a value (json or ason)')
 			if (value !== 'json' && value !== 'ason') throw new TskError(`unknown format '${value}'; expected json or ason`)
 			format = value
 		}

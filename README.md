@@ -72,9 +72,9 @@ does not create a dependency; use `--needs` when work must wait for a target.
 | `tsk --detailed-help` | Show the task format and rebuild workflow in detail. |
 
 Use `tsk <command> --help` for command options. Commands that return task data
-accept `--format json` or `--format ason` for structured output; for example,
-`tsk show <id> --format json` includes notes, links, and file paths. Errors
-go to stderr so structured stdout remains clean.
+accept `--format json|ason` or `--format=json|ason` for structured output.
+For example, `tsk show <id> --format json` includes notes, links, and file
+paths. Errors go to stderr so structured stdout remains clean.
 
 Human `tsk ls` uses one row per task with status, ID, title, optional needs/note/file
 counts, a short spec excerpt, and spec size; its footer counts planned and done
