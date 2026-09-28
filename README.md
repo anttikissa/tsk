@@ -75,6 +75,7 @@ Use `tsk <command> --help` for command options. Commands that return task data
 accept `--format json|ason` or `--format=json|ason` for structured output.
 For example, `tsk show <id> --format json` includes notes, links, and file
 paths. Errors go to stderr so structured stdout remains clean.
+Options with values accept either a space or `=` before the value.
 
 Human `tsk ls` uses one row per task with status, ID, title, optional needs/note/file
 counts, a short spec excerpt, and spec size; its footer counts planned and done

@@ -126,3 +126,15 @@ test('equals-form --format works across data commands and rejects missing or rep
 		expect(result.err).toContain(args.length === 1 ? '--format requires a value' : '--format may be given only once')
 	}
 })
+
+test('value flags accept equals syntax without splitting positional text', () => {
+	const root = makeRepo({ a: task('done') })
+	const added = tskHuman(root, 'add', '--title=foo', '--spec=bar=baz', '--needs=a', '--format=ason')
+	expect(added.code).toBe(0)
+	const record = parse(added.out) as { id: string; title: string; spec: string; needs: string[] }
+	expect(record).toMatchObject({ title: 'foo', spec: 'bar=baz', needs: ['a'] })
+	expect(JSON.parse(tskHuman(root, 'ls', '--status=planned', '--format=json').out)).toHaveLength(1)
+	expect(parse(tskHuman(root, 'edit', record.id, '--title=changed', '--once=false', '--format=ason').out)).toMatchObject({ title: 'changed', once: false })
+	expect(parse(tskHuman(root, 'add-note', record.id, '--spec=literal', '--format=ason').out)).toMatchObject({ notes: ['--spec=literal'] })
+	expect(parse(tskHuman(root, 'add', '--title=split?', '--spec', '--needs=a', '--format=ason').out)).toMatchObject({ spec: '--needs=a' })
+})

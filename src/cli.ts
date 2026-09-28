@@ -34,8 +34,8 @@ Commands:
 Task records: title, spec, status, needs; optional once, notes, foldInto.
 Project: tasks/README.md, project.ason (optional keep), task files.
 Use tsk edit <id> to update task fields with flags or VISUAL/EDITOR; use tsk add-note for notes.
-Commands default to concise human-readable output. Use --format json|ason or --format=json|ason for structured output.
-Run tsk <command> --help for command usage and examples.
+Commands default to concise human-readable output. Options with values accept a space or = (e.g. --spec=Text).
+Use --format json|ason or --format=json|ason for structured output. Run tsk <command> --help for command usage and examples.
 Run tsk --detailed-help for the full task format and rebuild guide.`
 
 const DETAILED_HELP = `${USAGE}
@@ -90,6 +90,28 @@ const COMMAND_HELP: Record<string, string> = {
  version: `Usage: tsk version\nPrint the installed version (also tsk --version).\nOptions: --help\nExample: tsk version`,
  help: `Usage: tsk help\nShow the top-level feature and command summary (also tsk, tsk --help, or tsk -h). Use tsk --detailed-help for the full format.\nOptions: --help\nExample: tsk help`,
  del: `Usage: tsk del <id> [--force] [--format json|ason]\nDelete a task with no incoming needs or foldInto references. Refuse files unless --force is explicit.\nOptions: --force, --format, --help\nExample: tsk del r --force`,
+}
+
+const VALUE_OPTIONS: Record<string, readonly string[]> = {
+	add: ['--title', '--spec', '--status', '--needs', '--fold-into'],
+	edit: ['--title', '--spec', '--status', '--once', '--needs', '--fold-into'],
+	ls: ['--status'],
+}
+
+function expandEquals(args: string[], command: string): string[] {
+	const options = new Set(['--format', ...(VALUE_OPTIONS[command] ?? [])])
+	const expanded: string[] = []
+	for (let i = 0; i < args.length; i++) {
+		const arg = args[i]!
+		const separator = arg.indexOf('=')
+		const flag = arg.slice(0, separator)
+		if (separator > 0 && options.has(flag)) expanded.push(flag, arg.slice(separator + 1))
+		else {
+			expanded.push(arg)
+			if (options.has(arg) && i + 1 < args.length) expanded.push(args[++i]!)
+		}
+	}
+	return expanded
 }
 
 type OutputFormat = 'human' | 'json' | 'ason'
@@ -534,12 +556,13 @@ export async function main(args: string[], cwd = process.cwd()): Promise<number>
 		let format: OutputFormat = 'human'
 		const rest: string[] = []
 		let specified = false
-		for (let i = 0; i < initial.length; i++) {
-			const arg = initial[i]!
-			if (arg !== '--format' && !arg.startsWith('--format=')) { rest.push(arg); continue }
+		const expanded = expandEquals(initial, name)
+		for (let i = 0; i < expanded.length; i++) {
+			const arg = expanded[i]!
+			if (arg !== '--format') { rest.push(arg); continue }
 			if (specified) throw new TskError('--format may be given only once')
 			specified = true
-			const value = arg === '--format' ? initial[++i] : arg.slice('--format='.length)
+			const value = expanded[++i]
 			if (value === undefined || value === '' || value.startsWith('--')) throw new TskError('--format requires a value (json or ason)')
 			if (value !== 'json' && value !== 'ason') throw new TskError(`unknown format '${value}'; expected json or ason`)
 			format = value
