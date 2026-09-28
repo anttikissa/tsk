@@ -1,5 +1,5 @@
 // The tsk command-line entry point, run through ./run.
-import { add, addNote, del, done, edit, init, reset } from './commands.ts'
+import { add, addNote, clean, del, done, edit, init, reset } from './commands.ts'
 import { COMMANDS, commandHelp, detailedHelp, usage, version } from './help.ts'
 import { TskError } from './project.ts'
 import { foldable, ls, ready, show, tree, type Io } from './views.ts'
@@ -17,6 +17,7 @@ const HANDLERS: Record<string, (io: Io, args: string[]) => void> = {
 	'add-note': addNote,
 	del,
 	reset,
+	clean,
 }
 
 /** Run tsk with `argv` (without the program name); returns the exit code. */

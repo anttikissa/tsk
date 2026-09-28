@@ -1,8 +1,8 @@
 // Commands that change tasks: init, add, done, edit, add-note, del and reset.
 import { spawnSync } from 'node:child_process'
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { isAbsolute, join, normalize } from 'node:path'
 import { parse } from './ason.ts'
 import { expectPositionals, formatOption, parseArgs, type Parsed } from './args.ts'
 import {
@@ -283,4 +283,42 @@ export function reset(io: Io, args: string[]): void {
 	if (format !== 'human') return emit(io, format, changed)
 	const tasks = (n: number) => `${n} task${n === 1 ? '' : 's'}`
 	io.out(`Reset ${tasks(changed.length)} to planned.${once ? ` ${tasks(once)} left done (once).` : ''}\n`)
+}
+
+/** Delete everything at the Git root except .git/, tasks/ and the keep list. */
+export function clean(io: Io, args: string[]): void {
+	// -f is the conventional short form; the parser only knows long options.
+	const parsed = parseArgs(args.map((arg) => (arg === '-f' ? '--force' : arg)), { force: 'flag', format: 'string' }, 'clean')
+	const format = formatOption(parsed, 'clean')
+	expectPositionals(parsed, 'clean', [])
+	const project = loadProject(io.cwd)
+	const keep = ['.git', 'tasks']
+	for (const path of project.keep) {
+		const rel = normalize(path).replace(/\/+$/, '')
+		if (isAbsolute(rel) || rel === '..' || rel.startsWith('../') || rel === '.') throw new TskError(`keep path ${path} is not inside the repository`)
+		keep.push(rel)
+	}
+	const deleted: string[] = []
+	const walk = (rel: string) => {
+		for (const entry of readdirSync(join(project.root, rel)).sort()) {
+			const path = rel ? `${rel}/${entry}` : entry
+			if (keep.includes(path)) continue
+			// Descend only into real directories that contain kept paths; symlinks are removed, not followed.
+			if (keep.some((k) => k.startsWith(`${path}/`)) && lstatSync(join(project.root, path)).isDirectory()) walk(path)
+			else deleted.push(path)
+		}
+	}
+	walk('')
+	// Report top-level entries only; a directory that holds kept paths is cleaned partly.
+	const top: string[] = []
+	for (const path of deleted) {
+		const name = path.split('/')[0]!
+		const label = name === path ? name : `${name} (partly)`
+		if (!top.includes(label)) top.push(label)
+	}
+	if (parsed.options.force) for (const path of deleted) rmSync(join(project.root, path), { recursive: true, force: true })
+	if (format !== 'human') return emit(io, format, top)
+	if (!top.length) return io.out('Nothing to clean.\n')
+	const verb = parsed.options.force ? 'DELETED' : 'WOULD DELETE'
+	io.out(top.map((name) => `${verb} ${name}\n`).join('') + (parsed.options.force ? '' : 'Run tsk clean -f to delete.\n'))
 }

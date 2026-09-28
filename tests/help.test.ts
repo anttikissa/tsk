@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { makeRepo, tempDir, tsk } from './helpers.ts'
 
-const COMMANDS = ['init', 'add', 'del', 'edit', 'add-note', 'ls', 'ready', 'foldable', 'show', 'tree', 'done', 'reset', 'version', 'help']
+const COMMANDS = ['init', 'add', 'del', 'edit', 'add-note', 'ls', 'ready', 'foldable', 'show', 'tree', 'done', 'reset', 'clean', 'version', 'help']
 
 test('help, --help, -h, and no arguments print the same usage guide', () => {
 	const root = makeRepo()

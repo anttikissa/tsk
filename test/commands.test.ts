@@ -141,3 +141,41 @@ test('reset keeps once tasks done and all other fields', () => {
 		r.cleanup()
 	}
 })
+
+test('clean -f deletes everything but .git/, tasks/ and the keep list', () => {
+	const r = repo({ a: task('A') })
+	const at = (p: string) => join(r.root, p)
+	writeFileSync(at('tasks/project.ason'), "{ format: 'tsk', version: 1, keep: ['README.md', '.github/workflows/ci.yml'] }\n")
+	mkdirSync(at('.github/workflows'), { recursive: true })
+	mkdirSync(at('src/deep'), { recursive: true })
+	for (const p of ['README.md', '.github/workflows/ci.yml', '.github/workflows/old.yml', '.github/x', 'src/deep/a.ts', 'z']) writeFileSync(at(p), 'x')
+	mkdirSync(at('outside'))
+	writeFileSync(at('outside/o'), 'x')
+	symlinkSync(at('outside'), at('link'))
+	writeFileSync(at('.git/HEAD'), 'x')
+
+	const dry = r.cli('clean')
+	expect(dry.code).toBe(0)
+	for (const name of ['.github', 'link', 'outside', 'src', 'z']) expect(dry.stdout).toContain(name)
+	expect(dry.stdout).not.toContain('deep')
+	expect(dry.stdout).not.toContain('old.yml')
+	expect(existsSync(at('src/deep/a.ts'))).toBe(true)
+	expect(JSON.parse(r.cli('clean', '--format', 'json').stdout)).toEqual(['.github (partly)', 'link', 'outside', 'src', 'z'])
+
+	const out = r.cli('clean', '-f')
+	expect(out.code).toBe(0)
+	expect(out.stdout).not.toContain('old.yml')
+	expect(readdirSync(r.root).sort()).toEqual(['.git', '.github', 'README.md', 'tasks'])
+	expect(readdirSync(at('.github/workflows'))).toEqual(['ci.yml'])
+	expect(existsSync(at('.git/HEAD'))).toBe(true)
+	expect(existsSync(at('tasks/a/task.ason'))).toBe(true)
+	expect(JSON.parse(r.cli('clean', '-f', '--format', 'json').stdout)).toEqual([])
+	r.cleanup()
+})
+
+test('clean rejects keep paths outside the repository', () => {
+	const r = repo({ a: task('A') })
+	writeFileSync(join(r.root, 'tasks/project.ason'), "{ format: 'tsk', version: 1, keep: ['../x'] }\n")
+	expect(r.cli('clean', '-f').stderr).toContain('not inside the repository')
+	r.cleanup()
+})

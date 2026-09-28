@@ -112,6 +112,12 @@ export const COMMANDS: Record<string, CommandHelp> = {
 		options: [FORMAT],
 		examples: ['tsk reset'],
 	},
+	clean: {
+		usage: 'tsk clean -f',
+		summary: 'Delete everything at the Git root except .git/, tasks/ and the keep list in tasks/project.ason. Without -f, only list the top-level entries it would delete.',
+		options: ['  -f, --force          Delete; without it nothing is deleted', FORMAT],
+		examples: ['tsk clean', 'tsk clean -f'],
+	},
 	version: {
 		usage: 'tsk version',
 		summary: 'Print the installed package version (also tsk --version).',
@@ -214,6 +220,7 @@ the project again from the task graph:
       take a task; merge its requirements and useful notes into each foldInto
       target, move files that must survive, update tasks that refer to it,
       then tsk del it
+  tsk clean -f                     # delete everything but .git/, tasks/, keep
   while tsk ready lists tasks:
       implement a task, then tsk done <id>
 

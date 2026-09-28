@@ -31,6 +31,7 @@ while tsk foldable lists tasks:
     incorporate its requirements and useful notes into each target
     move any files that must survive and update tasks that refer to it
     delete the folded task
+tsk clean -f # delete everything except .git/, tasks/ and the keep list
 while planned tasks remain:
     pick a task whose dependencies are all done
     implement the task
@@ -94,6 +95,7 @@ task.
 | `tsk add-note <id> <text>` | Append an observation to a task's notes. |
 | `tsk del <id> [--force]` | Delete an unreferenced task; `--force` is required when files are present. |
 | `tsk reset` | Set done tasks back to planned for a rebuild, except `once: true` tasks. |
+| `tsk clean [-f]` | List the top-level entries a rebuild would delete: everything except `.git/`, `tasks/` and the `keep` paths in `tasks/project.ason`. `-f` deletes them. |
 | `tsk version` (`tsk --version`) | Print the installed package version. |
 | `tsk help` (`tsk --help`, `tsk -h`) | Show the command summary and version. |
 | `tsk --detailed-help` | Show the task format and rebuild workflow in detail. |
@@ -104,7 +106,7 @@ records keep the order `id`, `title`, `spec`, `status`, `once`, `notes`,
 adds `neededBy` (IDs of tasks that need this one), `foldedBy` (IDs of tasks
 that fold into it) and `files`. `tsk tree` prints `{ nodes, dependencies,
 foldInto }`, where the last two are `{ from, to }` edges. `tsk del` prints
-`{ id, deleted: true }`, `tsk reset` the IDs it changed, and `tsk init`
+`{ id, deleted: true }`, `tsk reset` the IDs it changed, `tsk clean` the top-level entries it deletes or would delete, and `tsk init`
 `{ tasksDir }`.
 
 ## Installing

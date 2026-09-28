@@ -25,6 +25,8 @@ export type Project = {
 	root: string
 	tasksDir: string
 	tasks: Map<string, Task>
+	/** Paths relative to root that a rebuild keeps besides .git/ and tasks/. */
+	keep: string[]
 }
 
 export const ID_ALPHABET = '0123456789abcdefghjkmnpqrstvwxyz'
@@ -57,7 +59,7 @@ function isStringList(value: unknown): value is string[] {
 	return Array.isArray(value) && value.every((v) => typeof v === 'string')
 }
 
-function readProjectMarker(tasksDir: string): void {
+function readProjectMarker(tasksDir: string): string[] {
 	const path = join(tasksDir, 'project.ason')
 	const hint = `${tasksDir} is not a Tsk task directory`
 	if (!existsSync(path)) throw new TskError(`${hint}: project.ason is missing`)
@@ -73,6 +75,7 @@ function readProjectMarker(tasksDir: string): void {
 		if (!PROJECT_FIELDS.includes(key)) throw new TskError(`${path}: unknown field ${key}`)
 	}
 	if (marker.keep !== undefined && !isStringList(marker.keep)) throw new TskError(`${path}: keep must be a list of paths`)
+	return (marker.keep as string[] | undefined) ?? []
 }
 
 /** Check one record's shape; graph references are checked by validateGraph. */
@@ -214,7 +217,7 @@ export function loadProject(cwd: string): Project {
 	const tasksDir = join(root, 'tasks')
 	if (!existsSync(tasksDir)) throw new TskError(`no Tsk tasks/ directory at ${root}; run tsk init`)
 	if (!statSync(tasksDir).isDirectory()) throw new TskError(`${tasksDir} is not a directory`)
-	readProjectMarker(tasksDir)
+	const keep = readProjectMarker(tasksDir)
 	const tasks = new Map<string, Task>()
 	for (const entry of readdirSync(tasksDir, { withFileTypes: true })) {
 		if (entry.name.startsWith('.') || !entry.isDirectory()) continue
@@ -224,7 +227,7 @@ export function loadProject(cwd: string): Project {
 		if (!existsSync(path)) throw new TskError(`${dir}: missing task.ason`)
 		tasks.set(entry.name, { id: entry.name, dir, record: readRecord(entry.name, path) })
 	}
-	const project = { root, tasksDir, tasks }
+	const project = { root, tasksDir, tasks, keep }
 	validateGraph(recordsOf(project))
 	return project
 }
