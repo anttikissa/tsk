@@ -1,32 +1,32 @@
 #!/bin/sh
-# Install dependencies and link ~/.local/bin/tsk to this checkout's ./run.
-set -e
-root=$(cd "$(dirname "$0")" && pwd)
+set -eu
+
+root=$(CDPATH= cd -P -- "$(dirname -- "$0")" && pwd)
+if command -v bun >/dev/null 2>&1; then
+  (cd "$root" && bun install --frozen-lockfile)
+elif command -v npm >/dev/null 2>&1; then
+  (cd "$root" && npm install --no-audit --no-fund --no-package-lock)
+else
+  printf '%s\n' 'tsk: install Bun or Node.js and npm first' >&2
+  exit 127
+fi
+
 bin=$HOME/.local/bin
 link=$bin/tsk
-
-if command -v bun >/dev/null 2>&1; then (cd "$root" && bun install)
-elif command -v npm >/dev/null 2>&1; then (cd "$root" && npm install)
-else echo 'install: Bun or Node.js is required' >&2; exit 1
-fi
-
 mkdir -p "$bin"
 if [ -L "$link" ]; then
-	current=$(readlink "$link")
-	if [ "$current" != "$root/run" ]; then
-		case $current in
-			*/run) ;;
-			*) echo "install: $link links to $current; remove it first" >&2; exit 1 ;;
-		esac
-	fi
+  if [ "$(readlink "$link")" != "$root/run" ]; then
+    printf 'tsk: refusing to replace %s (points elsewhere)\n' "$link" >&2
+    exit 1
+  fi
 elif [ -e "$link" ]; then
-	echo "install: $link exists and is not a link; remove it first" >&2
-	exit 1
+  printf 'tsk: refusing to replace %s\n' "$link" >&2
+  exit 1
+else
+  ln -s "$root/run" "$link"
 fi
-ln -sfn "$root/run" "$link"
-echo "Linked $link -> $root/run"
 
-case ":$PATH:" in
-	*":$bin:"*) ;;
-	*) echo "Add $bin to PATH, e.g.: echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.profile" ;;
+case :$PATH: in
+  *:"$bin":*) printf 'tsk is ready: %s\n' "$link" ;;
+  *) printf 'tsk is ready. Add %s to your PATH (for example, export PATH="%s:$PATH").\n' "$bin" "$bin" ;;
 esac

@@ -26,8 +26,9 @@ try {
       writeFileSync(join(dir,safe,'task.ason'), `{title:'Task ${i}',spec:'Benchmark',status:'planned',needs:[]}\n`)
     }
     console.log(`\n${size} tasks`)
-    const cold = spawnSync(process.execPath, [join(import.meta.dir,'../run'),'ls','--format=json'], {cwd:root, encoding:'utf8'})
-    console.log(`cold CLI startup + load: ${cold.status === 0 ? 'ok' : cold.stderr.trim()} (wall time measured externally)`)
+    const coldStart = performance.now()
+    const cold = spawnSync(join(import.meta.dir,'../run'), ['ls','--status=done','--format=json'], {cwd:root, encoding:'utf8'})
+    console.log(`cold CLI startup + load: ${(performance.now()-coldStart).toFixed(2)} ms (${cold.status === 0 ? 'ok' : cold.stderr.trim() || cold.error?.message})`)
     let project = loadProject(root)
     measure('disk project load', () => { project = loadProject(root) })
     measure('warm lookup (1,000 reads)', () => { for (let i=0;i<1000;i++) project.tasks.get('00000') })

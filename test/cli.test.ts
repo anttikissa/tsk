@@ -59,3 +59,22 @@ test('deletion refuses references and artifacts, reset keeps once tasks', () => 
   expect(run(['del','b','--force'],root)).toContain('DELETED')
   expect(readdirSync(join(root,'tasks'))).not.toContain('b')
 }))
+test('reset handles a done dependency chain in reverse order', () => fixture(root => {
+  task(root,'a',"{ title:'Root', spec:'Root', status:'done', needs:[] }\n")
+  task(root,'b',"{ title:'Child', spec:'Child', status:'done', needs:['a'] }\n")
+  task(root,'c',"{ title:'Grandchild', spec:'Grandchild', status:'done', needs:['b'] }\n")
+  expect(JSON.parse(run(['reset','--format','json'],root))).toEqual(['a','b','c'])
+  expect(JSON.parse(run(['ready','--format=json'],root)).map((t: {id:string}) => t.id)).toEqual(['a'])
+}))
+test('failed editor and invalid notes leave the original record intact', () => fixture(root => {
+  task(root,'a',"{ title:'Root', spec:'Root', status:'planned', needs:[] }\n")
+  const path = join(root,'tasks','a','task.ason')
+  const initial = readFileSync(path,'utf8')
+  const old = process.env.VISUAL
+  try {
+    process.env.VISUAL = 'false'
+    expect(() => run(['edit','a'],root)).toThrow(/Editor failed/)
+  } finally { if (old === undefined) delete process.env.VISUAL; else process.env.VISUAL = old }
+  expect(() => run(['add-note','a','bad\nnote'],root)).toThrow(/single-line/)
+  expect(readFileSync(path,'utf8')).toBe(initial)
+}))

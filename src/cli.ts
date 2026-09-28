@@ -43,7 +43,11 @@ function options(args: string[], allowed: string[], boolean: string[] = []): { p
     if (!arg.startsWith('--')) { positional.push(arg); continue }
     const name = arg.split('=')[0]!
     if (!allowed.includes(name)) fail(`Unknown option: ${name}`)
-    if (boolean.includes(name) && !arg.includes('=')) { values.set(name, ['true']); continue }
+    if (boolean.includes(name) && !arg.includes('=')) {
+      if (name === '--once' && (args[i + 1] === 'true' || args[i + 1] === 'false')) values.set(name, [args[++i]!])
+      else values.set(name, ['true'])
+      continue
+    }
     const [value, end] = optionValue(args, i, name)
     values.set(name, [...(values.get(name) ?? []), value]); i = end
   }
@@ -106,7 +110,7 @@ export function run(argv: string[] = process.argv.slice(2), cwd = process.cwd())
   const command = argv[0]
   if (!command || command === '--help' || command === '-h' || command === 'help') return help(command === 'help' ? argv[1] : undefined)
   if (command === '--detailed-help') return help(undefined, true)
-  if (command === '--version' || command === 'version') return version() + '\n'
+  if (command === '--version' || command === 'version') return version()
   if (!commands.has(command)) fail(`Unknown command: ${command}. Run tsk help.`)
   const {format, args} = formatArgs(argv.slice(1))
   if (args.includes('--help') || args.includes('-h')) return help(command)
@@ -160,7 +164,24 @@ export function run(argv: string[] = process.argv.slice(2), cwd = process.cwd())
   if (command === 'reset') {
     if (args.length) fail('Usage: tsk reset')
     const changed: string[] = []
-    for (const task of project.tasks.values()) if (task.status === 'done' && !task.once) {
+    const order: Task[] = []
+    const children = new Map<string, Task[]>()
+    const remaining = new Map<string, number>()
+    for (const task of project.tasks.values()) {
+      remaining.set(task.id, task.needs.length)
+      for (const need of task.needs) children.set(need, [...(children.get(need) ?? []), task])
+    }
+    const queue = [...project.tasks.values()].filter(t => !t.needs.length)
+    for (let i = 0; i < queue.length; i++) {
+      const task = queue[i]!
+      order.push(task)
+      for (const child of children.get(task.id) ?? []) {
+        const left = remaining.get(child.id)! - 1
+        remaining.set(child.id, left)
+        if (!left) queue.push(child)
+      }
+    }
+    for (const task of order.reverse()) if (task.status === 'done' && !task.once) {
       writeTask(project, {...task, status:'planned'}); changed.push(task.id)
     }
     const kept = [...project.tasks.values()].filter(t => t.status === 'done' && t.once).length

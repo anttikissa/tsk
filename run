@@ -1,22 +1,32 @@
 #!/bin/sh
-# The sole Tsk launcher, for the checkout and the installed tsk command.
-# Prefers Bun, falls back to Node.js. A checkout runs src/cli.ts directly;
-# an installed package runs the compiled dist/cli.js, because Node will not
-# strip types from files under node_modules.
-set -e
-self=$0
-while [ -L "$self" ]; do
-	target=$(readlink "$self")
-	case $target in
-		/*) self=$target ;;
-		*) self=$(dirname "$self")/$target ;;
-	esac
+# Resolve symlinks before locating the CLI, so a link in ~/.local/bin works.
+script=$0
+while [ -L "$script" ]; do
+  directory=$(CDPATH= cd -P -- "$(dirname -- "$script")" && pwd) || exit 1
+  target=$(readlink -- "$script") || exit 1
+  case $target in
+    /*) script=$target ;;
+    *) script=$directory/$target ;;
+  esac
 done
-root=$(cd "$(dirname "$self")" && pwd)
+root=$(CDPATH= cd -P -- "$(dirname -- "$script")" && pwd) || exit 1
 
-entry=$root/src/cli.ts
-case $root in */node_modules/*) entry=$root/dist/cli.js ;; esac
-if command -v bun >/dev/null 2>&1; then exec bun "$entry" "$@"; fi
-if command -v node >/dev/null 2>&1; then exec node --disable-warning=ExperimentalWarning "$entry" "$@"; fi
-echo 'tsk: Bun or Node.js is required' >&2
-exit 127
+case $root in
+  */node_modules/*)
+    entry=$root/dist/cli.js
+    if [ ! -f "$entry" ]; then
+      printf '%s\n' 'tsk: installed package is missing dist/cli.js' >&2
+      exit 1
+    fi
+    ;;
+  *) entry=$root/src/cli.ts ;;
+esac
+
+if command -v bun >/dev/null 2>&1; then
+  exec bun "$entry" "$@"
+elif command -v node >/dev/null 2>&1; then
+  exec node "$entry" "$@"
+else
+  printf '%s\n' 'tsk: install Bun or Node.js (>=22.18) to run tsk' >&2
+  exit 127
+fi

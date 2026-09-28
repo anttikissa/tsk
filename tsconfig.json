@@ -1,15 +1,15 @@
 {
-	"compilerOptions": {
-		"target": "ES2022",
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
-		"strict": true,
-		"noEmit": true,
-		"allowImportingTsExtensions": true,
-		"verbatimModuleSyntax": true,
-		"erasableSyntaxOnly": true,
-		"skipLibCheck": true,
-		"types": ["bun"]
-	},
-	"include": ["src", "tests", "tasks"]
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["bun"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "tasks/**/*.ts", "bench/**/*.ts"]
 }
