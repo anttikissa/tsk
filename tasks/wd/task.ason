@@ -1,6 +1,6 @@
 {
 	title: 'Fold follow-up tasks into rebuild targets',
 	spec: 'Support optional foldInto target IDs as rewrite guidance separate from needs: ordinary work in the current build, but merge requirements into every target and delete the follow-up on rebuild. FoldInto adds no dependencies or changes to ready, done or reset; targets may also be needs. Reject missing, self, one-off and downstream targets. Preserve foldInto in add, show and reset. tsk del <id> removes only the validated task directory; refuse tasks with incoming needs/foldInto references and directories containing artifacts unless --force, never follow symlinks or remove unrelated paths, and report refusals without changes. Human success prints a DELETED row; errors go to stderr.',
-	status: 'planned',
+	status: 'done',
 	needs: ['5', '5p', 'pf']
 }
