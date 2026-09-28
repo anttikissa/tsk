@@ -23,7 +23,7 @@ test('show prints the task with direct dependencies and dependents', () => {
 	needs: [{ id: 'a', title: 'T', status: 'done' }],
 	neededBy: ['c'],
 	foldedBy: [],
-	artifacts: []
+	files: []
 }
 `)
 	expect(tsk(root, 'show', 'a').out).toContain('needs: [],\n')
@@ -50,7 +50,7 @@ test('show lists task artifacts recursively in stable relative-path order', () =
 	symlinkSync(join(dir, 'nested'), join(dir, 'linked-directory'))
 	const result = tsk(root, 'show', 'a')
 	expect(result.code).toBe(0)
-	expect((parse(result.out) as { artifacts: string[] }).artifacts).toEqual([
+	expect((parse(result.out) as { files: string[] }).files).toEqual([
 		'a.txt', 'linked-directory', 'nested/deep/file.test.ts', 'nested/task.ason', 'z.txt'
 	])
 })

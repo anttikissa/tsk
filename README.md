@@ -59,13 +59,13 @@ does not create a dependency; use `--needs` when work must wait for a target.
 | `tsk init` | Create `tasks/` and its project marker at the Git root. |
 | `tsk add --title <text> --spec <text> [--needs <id>]... [--fold-into <id>]...` | Add a planned task. Repeat `--needs` or `--fold-into` for multiple IDs; optionally pass `--status done`. |
 | `tsk ready` | List planned tasks whose dependencies are all done. |
-| `tsk show <id>` | Show a task with its direct dependencies, dependents, incoming fold links, and artifact paths. |
+| `tsk show <id>` | Show a task with its direct dependencies, dependents, incoming fold links, and files. |
 | `tsk done <id>` | Mark a task done when all dependencies are done. |
 | `tsk ls [--status planned|done] [--spec] [--notes] [--folded-by]` | List task summaries; opt in to full specs, notes, or incoming fold links. |
 | `tsk tree [<id>]` | Visualize the dependency graph; an ID limits the view to that task and its downstream dependents. |
 | `tsk edit <id> [options]` | Update task fields with flags or an editor. |
 | `tsk add-note <id> <text>` | Append an observation to a task's notes. |
-| `tsk del <id> [--force]` | Delete an unreferenced task; `--force` is required when artifacts are present. |
+| `tsk del <id> [--force]` | Delete an unreferenced task; `--force` is required when files are present. |
 | `tsk reset` | Set done tasks back to planned for a rebuild, except `once: true` tasks. |
 | `tsk version` (`tsk --version`) | Print the installed package version. |
 | `tsk help` (`tsk --help`, `tsk -h`) | Show the command summary and version. |
@@ -73,8 +73,13 @@ does not create a dependency; use `--needs` when work must wait for a target.
 
 Use `tsk <command> --help` for command options. Commands that return task data
 accept `--format json` or `--format ason` for structured output; for example,
-`tsk show <id> --format json` includes notes, links, and artifact paths. Errors
+`tsk show <id> --format json` includes notes, links, and file paths. Errors
 go to stderr so structured stdout remains clean.
+
+Human `tsk ls` uses one row per task with status, ID, title, optional needs/note/file
+counts, a short spec excerpt, and spec size; its footer counts planned and done
+tasks. `tsk show <id>` prints the full spec and nonempty details. `tsk reset`
+reports how many tasks changed and how many one-off tasks stayed done.
 
 ## Installing
 

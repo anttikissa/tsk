@@ -28,9 +28,10 @@ test('ls filters status and reveals requested fields with Unicode character leng
 	}])
 	const human = tskHuman(root, 'ls', '--status', 'done', '--spec', '--notes', '--folded-by')
 	expect(human.code).toBe(0)
-	expect(human.out).toContain('spec: D')
-	expect(human.out).toContain('notes: (none)')
-	expect(human.out).toContain('foldedBy: (none)')
+	expect(human.out).toContain('DONE    task b: T: D (1 b)')
+	expect(human.out).toContain('  D')
+	expect(human.out).not.toContain('notes: (none)')
+	expect(human.out).not.toContain('foldedBy: (none)')
 })
 
 test('ls folded-by lists incoming fold links in stable ID order', () => {

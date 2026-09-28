@@ -1,6 +1,6 @@
 {
 	title: 'List tasks',
-	spec: 'tsk ls prints a compact ASON list of all tasks, sorted by ID, with ID, title, status, and needs for each. Print [] for an empty project; leave specs and dependency details to tsk show.',
+	spec: 'tsk ls lists all tasks sorted by ID, showing compact human task rows and a planned/done count or structured task summaries. For an empty project the structured result is []; use tsk show for full details.',
 	status: 'done',
 	needs: ['r']
 }

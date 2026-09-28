@@ -21,7 +21,7 @@ Commands:
   del     Delete an unreferenced task: <id> [--force]
   ls      Browse task summaries: --status, --spec, --notes, --folded-by
   ready   List planned tasks whose dependencies are done
-  show    Show one task, its links and artifacts: <id>
+  show    Show one task, its links and files: <id>
   tree    Visualize dependency graph: [<id>]
   edit    Edit a task: <id> [--title <text>] [--spec <text>] [--status planned|done]
           [--once true|false] [--needs <id>]... [--fold-into <id>]...
@@ -32,7 +32,7 @@ Commands:
   help    Show this usage guide
 
 Task records: title, spec, status, needs; optional once, notes, foldInto.
-Project: tasks/README.md, project.ason (optional keep), task artifact files.
+Project: tasks/README.md, project.ason (optional keep), task files.
 Use tsk edit <id> to update task fields with flags or VISUAL/EDITOR; use tsk add-note for notes.
 Commands default to concise human-readable output. Use --format json or --format ason for structured output.
 Run tsk <command> --help for command usage and examples.
@@ -44,7 +44,7 @@ Project layout:
   tasks/project.ason  { format: 'tsk', version: 1 } (optional keep list)
   tasks/README.md     Shared instructions for agents implementing tasks
   tasks/<id>/task.ason  Task definition (lowercase Crockford base32 ID)
-  tasks/<id>/*        Optional artifacts: specifications, tests, images, etc.
+  tasks/<id>/*        Optional files: specifications, tests, images, etc.
   Project discovery starts at the nearest Git root; init creates tasks/ there.
 
 Task fields in task.ason (ASON object):
@@ -67,13 +67,13 @@ Project marker fields:
   keep         Optional list of files to retain during a rebuild; agents use it
 
 Workflow: use tsk add to create tasks, tsk ready to select work, tsk show
-for details and artifacts, and tsk done after implementing and committing.
+for details and files, and tsk done after implementing and committing.
 Use tsk edit <id> with field flags or VISUAL/EDITOR; editor mode also supports notes.
 tsk add --fold-into <id> records rewrite guidance. On a rebuild, agents
 incorporate a folded task's requirements into each target, then mark it done
 without separate work.
 Run tsk reset to return done tasks to planned, except once: true tasks;
-reset changes statuses, not artifacts or other files. Respect project keep
+reset changes statuses, not files. Respect project keep
 entries when rebuilding. See tsk <command> --help for command examples.`
 
 const COMMAND_HELP: Record<string, string> = {
@@ -81,7 +81,7 @@ const COMMAND_HELP: Record<string, string> = {
  add: `Usage: tsk add --title <text> --spec <text> [--status planned|done] [--needs <id>]... [--fold-into <id>]... [--format json|ason]\nCreate a task. Repeat --needs and --fold-into for multiple IDs; foldInto is advisory rewrite guidance, not a dependency.\nOptions: --title, --spec, --status, --needs, --fold-into, --format, --help\nExample: tsk add --title 'Write tests' --spec 'Cover search' --needs r`,
  ls: `Usage: tsk ls [--status planned|done] [--spec] [--notes] [--folded-by] [--format json|ason]\nList sorted task summaries; reveal full specs, notes, or incoming fold links on request.\nOptions: --status, --spec, --notes, --folded-by, --format, --help\nExample: tsk ls --status planned --folded-by`,
  ready: `Usage: tsk ready [--format json|ason]\nList planned tasks whose direct and indirect prerequisites are done.\nOptions: --format, --help\nExample: tsk ready --format ason`,
- show: `Usage: tsk show <id> [--format json|ason]\nShow a task's fields, dependencies, dependents, incoming fold links and artifact paths.\nOptions: --format, --help\nExample: tsk show r --format json`,
+ show: `Usage: tsk show <id> [--format json|ason]\nShow a task's fields, dependencies, dependents, incoming fold links and files.\nOptions: --format, --help\nExample: tsk show r --format json`,
  tree: `Usage: tsk tree [<id>] [--format json|ason]\nShow dependency graph from prerequisite roots toward dependents. With an ID, show only that task and downstream dependents. Shared tasks are identified once; foldInto links are annotations, not dependency edges.\nOptions: --format, --help\nExample: tsk tree r`,
  edit: `Usage: tsk edit <id> [--title <text>] [--spec <text>] [--status planned|done] [--once true|false] [--needs <id>]... [--fold-into <id>]... [--format json|ason]\nWith no update flags, open VISUAL, EDITOR, or vi. Repeat list flags to replace lists.\nOptions: --title, --spec, --status, --once, --needs, --fold-into, --format, --help\nExample: tsk edit r --title 'New title' --needs a`,
  'add-note': `Usage: tsk add-note <id> <text> [--format json|ason]\nAppend a non-empty note to a planned or done task, creating notes if absent.\nOptions: --format, --help\nExample: tsk add-note r 'Check error messages'`,
@@ -89,7 +89,7 @@ const COMMAND_HELP: Record<string, string> = {
  reset: `Usage: tsk reset [--format json|ason]\nSet done tasks back to planned, except completed once: true tasks.\nOptions: --format, --help\nExample: tsk reset`,
  version: `Usage: tsk version\nPrint the installed version (also tsk --version).\nOptions: --help\nExample: tsk version`,
  help: `Usage: tsk help\nShow the top-level feature and command summary (also tsk, tsk --help, or tsk -h). Use tsk --detailed-help for the full format.\nOptions: --help\nExample: tsk help`,
- del: `Usage: tsk del <id> [--force] [--format json|ason]\nDelete a task with no incoming needs or foldInto references. Refuse artifacts unless --force is explicit.\nOptions: --force, --format, --help\nExample: tsk del r --force`,
+ del: `Usage: tsk del <id> [--force] [--format json|ason]\nDelete a task with no incoming needs or foldInto references. Refuse files unless --force is explicit.\nOptions: --force, --format, --help\nExample: tsk del r --force`,
 }
 
 type OutputFormat = 'human' | 'json' | 'ason'
@@ -114,6 +114,45 @@ function print(value: unknown): void {
 	if (outputFormat === 'json') console.log(JSON.stringify(value, null, 2))
 	else if (outputFormat === 'ason') console.log(stringify(value))
 	else console.log(human(value))
+}
+
+function humanRow(task: Task, fileCount = 0, extras: string[] = []): string {
+	const details = [
+		...(task.needs.length ? [`needs ${task.needs.join(', ')}`] : []),
+		...(task.notes?.length ? [`${task.notes.length} ${task.notes.length === 1 ? 'note' : 'notes'}`] : []),
+		...(fileCount ? [`${fileCount} ${fileCount === 1 ? 'file' : 'files'}`] : []),
+		...extras,
+	]
+	return `${task.status.toUpperCase().padEnd(7)} task ${task.id}: ${task.title}${details.length ? ` (${details.join('; ')})` : ''}`
+}
+
+function specSize(spec: string): string {
+	const bytes = Buffer.byteLength(spec)
+	return bytes < 1000 ? `${bytes} b` : `${(bytes / 1000).toFixed(1)} kB`
+}
+
+function listRow(task: Task, fileCount: number, extras: string[] = [], width = 80): string {
+	const prefix = `${humanRow(task, fileCount, extras)}: `
+	const suffix = ` (${specSize(task.spec)})`
+	const text = task.spec.replace(/\s+/g, ' ').trim()
+	const room = Math.max(0, width - [...prefix].length - [...suffix].length)
+	const chars = [...text]
+	const excerpt = chars.length > room ? `${chars.slice(0, Math.max(0, room - 1)).join('')}…` : text
+	return `${prefix}${excerpt}${suffix}`
+}
+
+function showHuman(task: Task, project: ReturnType<typeof loadProject>): string {
+	const files = artifactFiles(join(project.tasksDir, task.id))
+	const lines = [humanRow(task, files.length), `  ${task.spec.replaceAll('\n', '\n  ')}`]
+	if (task.once) lines.push('  once: true')
+	if (task.foldInto?.length) lines.push(`  foldInto → ${task.foldInto.join(', ')}`)
+	const neededBy = sortedTasks(project.tasks).filter((other) => other.needs.includes(task.id)).map((other) => other.id)
+	if (neededBy.length) lines.push(`  neededBy: ${neededBy.join(', ')}`)
+	const foldedBy = sortedTasks(project.tasks).filter((other) => other.foldInto?.includes(task.id)).map((other) => other.id)
+	if (foldedBy.length) lines.push(`  foldedBy: ${foldedBy.join(', ')}`)
+	if (task.notes?.length) lines.push('  notes:', ...task.notes.map((note) => `    - ${note.replaceAll('\n', '\n      ')}`))
+	if (files.length) lines.push('  files:', ...files.map((file) => `    - ${file}`))
+	return lines.join('\n')
 }
 
 type Command = (args: string[], cwd: string) => void | Promise<void>
@@ -162,7 +201,7 @@ function deleteTask(args: string[], cwd: string): void {
 		}
 	}
 	try { scan(taskPath) } catch (error) { if (error instanceof TskError) throw error; throw new TskError(`cannot inspect task ${id}: ${(error as Error).message}`) }
-	if (artifacts.length && !force) throw new TskError(`task ${id} has artifact files; pass --force to delete them: ${artifacts.join(', ')}`)
+	if (artifacts.length && !force) throw new TskError(`task ${id} has files; pass --force to delete them: ${artifacts.join(', ')}`)
 	const trash = join(tasksRoot, `.tsk-delete-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
 	try {
 		renameSync(taskPath, trash)
@@ -174,7 +213,8 @@ function deleteTask(args: string[], cwd: string): void {
 	} catch (error) {
 		throw new TskError(`could not delete task ${id}: ${(error as Error).message}`)
 	}
-	print({ id, deleted: true })
+	if (outputFormat === 'human') console.log(listRow(task, artifacts.length).replace(/^(DONE|PLANNED) +/, 'DELETED '))
+	else print({ id, deleted: true })
 }
 
 function artifactFiles(dir: string): string[] {
@@ -334,7 +374,9 @@ const commands: Record<string, Command> = {
 	},
 
 	add(args, cwd) {
-		print(add(args, cwd))
+		const added = add(args, cwd)
+		if (outputFormat === 'human') console.log(listRow(added, 0))
+		else print(added)
 	},
 
 	del(args, cwd) {
@@ -369,7 +411,8 @@ const commands: Record<string, Command> = {
 			else if (arg === '--folded-by') includeFoldedBy = true
 			else throw new TskError(`unknown ls option: ${arg}`)
 		}
-		const { tasks } = loadProject(cwd)
+		const project = loadProject(cwd)
+		const { tasks } = project
 		const all = sortedTasks(tasks)
 		const results = all
 			.filter((task) => status === undefined || task.status === status)
@@ -384,7 +427,17 @@ const commands: Record<string, Command> = {
 				...(includeNotes && { notes: task.notes ?? [] }),
 				...(includeFoldedBy && { foldedBy: all.filter((other) => other.foldInto?.includes(task.id)).map((other) => other.id) }),
 			}))
-		print(results)
+		if (outputFormat === 'human') {
+			const visible = all.filter((task) => status === undefined || task.status === status)
+			for (const task of visible) {
+				const foldedBy = includeFoldedBy ? all.filter((other) => other.foldInto?.includes(task.id)).map((other) => other.id) : []
+				console.log(listRow(task, artifactFiles(join(project.tasksDir, task.id)).length, foldedBy.length ? [`foldedBy ${foldedBy.join(', ')}`] : []))
+				if (includeSpec) console.log(`  ${task.spec.replaceAll('\n', '\n  ')}`)
+				if (includeNotes && task.notes?.length) console.log('  notes:\n' + task.notes.map((note) => `    - ${note.replaceAll('\n', '\n      ')}`).join('\n'))
+			}
+			const planned = all.filter((task) => task.status === 'planned').length
+			console.log(`${planned} planned ${planned === 1 ? 'task' : 'tasks'} found, ${all.length - planned} done.`)
+		} else print(results)
 	},
 
 	ready(args, cwd) {
@@ -398,6 +451,7 @@ const commands: Record<string, Command> = {
 		const project = loadProject(cwd)
 		const task = getTask(project, oneId('show', args))
 		const { id, title, spec, status, once, notes, foldInto } = task
+		if (outputFormat === 'human') { console.log(showHuman(task, project)); return }
 		print({
 			id,
 			title,
@@ -412,7 +466,7 @@ const commands: Record<string, Command> = {
 			...(foldInto !== undefined && { foldInto }),
 			neededBy: sortedTasks(project.tasks).filter((other) => other.needs.includes(id)).map((other) => other.id),
 			foldedBy: sortedTasks(project.tasks).filter((other) => other.foldInto?.includes(id)).map((other) => other.id),
-			artifacts: artifactFiles(join(project.tasksDir, id)),
+			files: artifactFiles(join(project.tasksDir, id)),
 		})
 	},
 
@@ -426,7 +480,8 @@ const commands: Record<string, Command> = {
 		else record.notes = [args[1]]
 		writeFileSync(path, formatAson(record, 'long'))
 		const { id, ...rest } = { ...task, notes: [...(task.notes ?? []), args[1]] }
-		print({ id, ...orderRecord(rest) })
+		if (outputFormat === 'human') console.log(showHuman({ ...task, notes: [...(task.notes ?? []), args[1]] }, project))
+		else print({ id, ...orderRecord(rest) })
 	},
 
 	done(args, cwd) {
@@ -445,7 +500,10 @@ const commands: Record<string, Command> = {
 		const project = loadProject(cwd)
 		const changed = sortedTasks(project.tasks).filter((task) => task.status === 'done' && !task.once)
 		for (const task of changed) setStatus(project.tasksDir, task.id, 'planned')
-		print(changed.map((task) => task.id))
+		if (outputFormat === 'human') {
+			const kept = [...project.tasks.values()].filter((task) => task.status === 'done' && task.once).length
+			console.log(`Reset ${changed.length} ${changed.length === 1 ? 'task' : 'tasks'} to planned.${kept ? ` ${kept} ${kept === 1 ? 'task' : 'tasks'} left done (once).` : ''}`)
+		} else print(changed.map((task) => task.id))
 	},
 }
 

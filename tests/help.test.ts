@@ -21,7 +21,7 @@ test('help lists exactly the commands the CLI accepts', () => {
 test('top-level help advertises all features and detailed help describes every field', () => {
 	const root = makeRepo()
 	const summary = tsk(root, '--help')
-	for (const feature of ['--detailed-help', 'notes', 'once', 'keep', 'foldInto', 'artifacts']) expect(summary.out).toContain(feature)
+	for (const feature of ['--detailed-help', 'notes', 'once', 'keep', 'foldInto', 'files']) expect(summary.out).toContain(feature)
 	const detailed = tsk(root, '--detailed-help')
 	expect(detailed.code).toBe(0)
 	for (const field of ['title', 'spec', 'status', 'needs', 'once', 'notes', 'foldInto', 'format', 'version', 'keep']) {
