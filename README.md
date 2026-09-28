@@ -4,9 +4,11 @@ A minimal task manager for rebuilding software.
 
 A task is a small, durable description of work:
 
-```text
-title: Mark a task done
-spec: tsk done <id> marks a task done when its dependencies are done
+```json
+{
+  "title": "Mark a task done",
+  "spec": "tsk done <id> marks a task done when its dependencies are done"
+}
 ```
 
 The title names the work; the spec says what a fresh build must produce and
@@ -36,14 +38,8 @@ tsk add --title 'Document the parser' \
 tsk ready
 ```
 
-Implement a ready task, then mark it done and commit the implementation and
-updated task record together:
-
-```sh
-tsk done <id>
-git add .
-git commit -m 'Document parser behavior'
-```
+Implement a ready task, then mark it done with `tsk done <id>`. Stage the
+implementation and updated task record, and commit them together.
 
 Repeat with the next ready task. `tsk` is the interface for creating, browsing,
 and updating tasks; use commands rather than editing task files directly.
@@ -122,7 +118,6 @@ MIT. See [LICENSE](LICENSE).
 
 ## What's ASON?
 
-ASON (A Saner Object Notation) is like JSON, but easier to read and edit: it
-allows unquoted keys, single-quoted strings, comments, and trailing commas. Tsk
-uses it for task files and command output. Its implementation is [one .ts
-file](src/ason.ts).
+ASON (A Saner Object Notation) is like JSON, but allows unquoted keys,
+single-quoted strings, comments, and trailing commas. Tsk uses it for task files
+and optional `--format ason` output. Its implementation is [one .ts file](src/ason.ts).
