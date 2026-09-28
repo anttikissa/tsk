@@ -1,6 +1,6 @@
 {
 	title: 'Clean the checkout for a rebuild',
 	spec: 'tsk clean lists the top-level entries at the Git root it would delete: everything except .git/, tasks/ and the keep paths in tasks/project.ason; nothing is deleted. tsk clean -f (or --force) deletes them. A top-level directory that holds a nested keep path is cleaned except for kept paths and reported once as partly cleaned; listings never go below the top level. Symlinks are removed, not followed. Keep paths outside the repository are an error. Structured output is the list of reported top-level entries. The README rebuild algorithm and tsk help run tsk clean -f after folding and before implementing tasks.',
-	status: 'planned',
+	status: 'done',
 	needs: ['r', 'pf', 'wd']
 }
