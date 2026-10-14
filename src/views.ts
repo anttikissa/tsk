@@ -264,22 +264,60 @@ export function tree(io: Io, args: string[]): void {
 	}
 
 	if (!roots.length) return io.out('No tasks.\n')
-	const lines: string[] = []
-	const shown = new Set<string>()
-	// connector is '' for roots, else '├── ' or '└── '; prefix holds the ancestors' guide columns.
-	const draw = (id: string, prefix: string, connector: string, parent: string): void => {
-		if (shown.has(id)) {
-			lines.push(`${prefix}${connector}${id} (also needs ${parent}; shown above)`)
-			return
+	const ids = [...included].sort(compareIds)
+	const remaining = new Map(ids.map((id) => [id, project.tasks.get(id)!.record.needs.filter((need) => included.has(need)).length]))
+	const ready = new Set(ids.filter((id) => remaining.get(id) === 0))
+	const lanes: (string | undefined)[] = []
+	const rows: { graph: string; id: string }[] = []
+	const glyphs = [' ', '╵', '╷', '│', '╴', '┘', '┐', '┤', '╶', '└', '┌', '├', '─', '┴', '┬', '┼']
+	while (ready.size) {
+		const id = lanes.find((lane) => lane !== undefined && ready.has(lane)) ?? ready.values().next().value!
+		ready.delete(id)
+		let node = lanes.indexOf(id)
+		if (node < 0) {
+			node = lanes.indexOf(undefined)
+			if (node < 0) node = lanes.length
 		}
-		shown.add(id)
-		const r = project.tasks.get(id)!.record
-		lines.push(`${prefix}${connector}${id} [${r.status}] ${r.title}`)
-		const next = prefix + (connector === '' ? '' : connector === '└── ' ? '    ' : '│   ')
-		if (r.foldInto?.length) lines.push(`${next}${connector ? '' : '    '}foldInto → ${r.foldInto.join(', ')}`)
+		const cells: number[] = lanes.map((lane) => lane === undefined ? 0 : 3)
+		cells[node] = lanes[node] === id ? 1 : 0
+		lanes[node] = undefined
 		const children = dependents.get(id) ?? []
-		children.forEach((child, i) => draw(child, next, i === children.length - 1 ? '└── ' : '├── ', id))
+		const targets = new Set<number>()
+		// Continue the chain in the node's lane before opening side branches.
+		const fresh = children.find((child) => !lanes.includes(child))
+		if (fresh !== undefined) lanes[node] = fresh
+		for (const child of children) {
+			let target = lanes.indexOf(child)
+			if (target < 0) {
+				target = lanes.indexOf(undefined)
+				if (target < 0) target = lanes.length
+				lanes[target] = child
+			}
+			targets.add(target)
+			cells[target] = (cells[target] ?? 0) | 2
+			const left = Math.min(node, target)
+			const right = Math.max(node, target)
+			for (let col = left; col < right; col++) {
+				cells[col] = (cells[col] ?? 0) | 8
+				cells[col + 1] = (cells[col + 1] ?? 0) | 4
+			}
+			const count = remaining.get(child)! - 1
+			remaining.set(child, count)
+			if (count === 0) ready.add(child)
+		}
+		const graph = cells.map((cell, col) => {
+			const glyph = col === node ? '●' : cell === 15 && !targets.has(col) ? '╪' : glyphs[cell]
+			return `${glyph}${cell & 8 ? '─' : ' '}`
+		}).join('').trimEnd()
+		rows.push({ graph, id })
+		while (lanes.length && lanes.at(-1) === undefined) lanes.pop()
 	}
-	for (const root of roots) draw(root, '', '', '')
-	io.out(`${lines.join('\n')}\n`)
+	const graphWidth = Math.max(...rows.map((row) => row.graph.length))
+	const idWidth = Math.max(...ids.map((id) => id.length))
+	const padStatus = ids.some((id) => project.tasks.get(id)!.record.status === 'planned')
+	io.out(rows.map(({ graph, id }) => {
+		const task = project.tasks.get(id)!
+		const folds = task.record.foldInto?.length ? ` (foldInto → ${task.record.foldInto.join(', ')})` : ''
+		return `${graph.padEnd(graphWidth)}  ${id.padEnd(idWidth)}  ${statusLabel(task, padStatus)}  ${task.record.title}${folds}\n`
+	}).join(''))
 }

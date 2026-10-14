@@ -2,15 +2,14 @@ import { expect, test } from 'bun:test'
 import { parse } from '../tasks/9/ason.ts'
 import { makeRepo, task, tsk, tskHuman } from './helpers.ts'
 
-test('tree renders chains and diamond convergence without duplicate expansion', () => {
+test('tree renders each task once, with diamond convergence after both prerequisites', () => {
 	const root = makeRepo({
 		a: task('done'), b: task('planned', ['a']), c: task('planned', ['a']),
 		d: task('planned', ['b', 'c']), e: task('planned', ['d']),
 	})
 	const result = tskHuman(root, 'tree')
 	expect(result.code).toBe(0)
-	expect(result.out).toBe('a [done] T\n├── b [planned] T\n│   └── d [planned] T\n│       └── e [planned] T\n└── c [planned] T\n    └── d (also needs c; shown above)\n')
-	expect(result.out.match(/d \[planned\]/g)).toHaveLength(1)
+	expect(result.out).toBe('●─┐  a  DONE     T\n● │  b  PLANNED  T\n├─●  c  PLANNED  T\n●    d  PLANNED  T\n●    e  PLANNED  T\n')
 })
 
 test('tree filters to a task and downstream, while folds remain separately annotated', () => {
@@ -20,14 +19,26 @@ test('tree filters to a task and downstream, while folds remain separately annot
 	})
 	const result = tskHuman(root, 'tree', 'b')
 	expect(result.code).toBe(0)
-	expect(result.out).toBe('b [planned] T\n    foldInto → a\n└── c [planned] T\n')
-	expect(result.out).not.toContain('a [done]')
+	expect(result.out).toBe('●  b  PLANNED  T (foldInto → a)\n●  c  PLANNED  T\n')
 })
 
 test('tree joins multiple fold targets without treating folds as children', () => {
 	const root = makeRepo({ a: task('done'), b: task('done'), c: task('planned', ['a', 'b'], "foldInto: ['a', 'b'],") })
 	const result = tskHuman(root, 'tree', 'c')
-	expect(result.out).toBe('c [planned] T\n    foldInto → a, b\n')
+	expect(result.out).toBe('●  c  PLANNED  T (foldInto → a, b)\n')
+})
+
+test('tree keeps disconnected chains together and reuses closed lanes', () => {
+	const root = makeRepo({ a: task('done', ['z']), b: task('done'), c: task('done', ['b']), z: task('done') })
+	expect(tskHuman(root, 'tree').out).toBe('●  b  DONE  T\n●  c  DONE  T\n●  z  DONE  T\n●  a  DONE  T\n')
+})
+
+test('tree distinguishes crossing a pending lane from joining it', () => {
+	const root = makeRepo({
+		a: task('done'), b: task('done', ['a']), c: task('done', ['a']), d: task('done', ['a']),
+		e: task('done', ['b', 'd']), f: task('done', ['c', 'z']), z: task('done'),
+	})
+	expect(tskHuman(root, 'tree').out).toBe('●─┬─┐  a  DONE  T\n● │ │  b  DONE  T\n│ ● │  c  DONE  T\n├─╪─●  d  DONE  T\n● │    e  DONE  T\n●─┤    z  DONE  T\n  ●    f  DONE  T\n')
 })
 
 test('tree machine output retains deterministic nodes, dependency edges, and fold links', () => {

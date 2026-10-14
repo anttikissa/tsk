@@ -96,7 +96,7 @@ task.
 | `tsk show <id>` | Show a task with its direct dependencies, dependents, incoming fold links, and files. |
 | `tsk done <id>` | Mark a task done when all dependencies are done. |
 | `tsk ls [--status planned|done] [--spec] [--notes] [--folded-by]` | List task summaries; opt in to full specs, notes, or incoming fold links. |
-| `tsk tree [<id>]` | Visualize the dependency graph; an ID limits the view to that task and its downstream dependents. |
+| `tsk tree [<id>]` | List tasks once, prerequisites first, with dependency lanes; an ID limits the view to that task and its downstream dependents. |
 | `tsk edit <id> [options]` | Update task fields with flags or an editor. |
 | `tsk add-note <id> <text>` | Append an observation to a task's notes. |
 | `tsk del <id> [--force]` | Delete an unreferenced task; `--force` is required when files are present. |
@@ -105,6 +105,11 @@ task.
 | `tsk version` (`tsk --version`) | Print the installed package version. |
 | `tsk help` (`tsk --help`, `tsk -h`) | Show the command summary and version. |
 | `tsk --detailed-help` | Show the task format and rebuild workflow in detail. |
+
+`tsk tree` reads top to bottom. Each `●` marks a task; lines on the left show
+prerequisite-to-dependent branches and merges. `╪` crosses a lane without
+joining it. ID, status and title columns stay aligned. `foldInto` targets appear
+beside the title, outside the dependency lanes.
 
 Commands that print task data accept `--format json` or `--format ason`. Task
 records keep the order `id`, `title`, `spec`, `status`, `once`, `notes`,

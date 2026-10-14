@@ -1,0 +1,10 @@
+{
+	title: 'Linear dependency lanes for tree',
+	spec: 'tsk tree human output is a top-to-bottom task list with compact dependency lanes on the left and aligned ID, status and title columns. Every task appears exactly once after all its included prerequisites; branch and merge connectors retain every dependency without duplicate task rows or connector-only rows. Lane crossings are visually distinct from junctions. Ordering is deterministic and keeps related chains together where possible; vacant lanes are reused. An optional ID still limits the view to that task and downstream dependents. foldInto targets are annotated on their task row, not drawn as dependencies. Empty output, validation and structured JSON/ASON graph output remain unchanged. Help and README describe the layout.',
+	status: 'done',
+	notes: [
+		'The old depth-first tree could place a shared dependent before another prerequisite and repeated its ID later. Human rendering now uses topological ordering. Crossings use ╪ so an unrelated passing lane cannot be mistaken for a dependency junction; structured graph output is unchanged.'
+	],
+	needs: ['5p'],
+	foldInto: ['5p']
+}

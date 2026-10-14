@@ -69,7 +69,7 @@ export const COMMANDS: Record<string, CommandHelp> = {
 	},
 	tree: {
 		usage: 'tsk tree [<id>]',
-		summary: 'Draw the dependency graph from prerequisite roots toward dependents. An ID limits it to that task and its downstream dependents.',
+		summary: 'List tasks once, prerequisites first, with dependency lanes showing branches and merges. An ID limits it to that task and its downstream dependents.',
 		options: [FORMAT],
 		examples: ['tsk tree', 'tsk tree 4k'],
 	},

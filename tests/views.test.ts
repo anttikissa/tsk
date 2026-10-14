@@ -88,9 +88,9 @@ test('tree draws dependents once and annotates foldInto', () => {
 	const r = repo({ a: task('A'), b: task('B', '', 'planned', ['a']), c: task('C', "foldInto: ['a'],", 'planned', ['a', 'b']) })
 	try {
 		expect(r.cli('tree').stdout).toBe(
-			['a [planned] A', '├── b [planned] B', '│   └── c [planned] C', '│       foldInto → a', '└── c (also needs a; shown above)', ''].join('\n'),
+			['●─┐  a  PLANNED  A', '●─┤  b  PLANNED  B', '  ●  c  PLANNED  C (foldInto → a)', ''].join('\n'),
 		)
-		expect(r.cli('tree', 'b').stdout).toBe('b [planned] B\n└── c [planned] C\n    foldInto → a\n')
+		expect(r.cli('tree', 'b').stdout).toBe('●  b  PLANNED  B\n●  c  PLANNED  C (foldInto → a)\n')
 		expect(parse(r.cli('tree', '--format', 'ason').stdout)).toEqual({
 			nodes: [
 				{ id: 'a', title: 'A', spec: 'A spec', status: 'planned', needs: [] },
